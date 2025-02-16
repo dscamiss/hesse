@@ -1,8 +1,8 @@
 """Type aliases."""
 
-from typing import Any
-
 import torch
+from jaxtyping import Num
+from torch import Tensor
 
-Hessian = Any
+Hessian = dict[str, dict[str, Num[Tensor, "..."]]]
 Loss = torch.nn.modules.loss._Loss  # pylint: disable=protected-access

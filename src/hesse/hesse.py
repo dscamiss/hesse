@@ -13,7 +13,7 @@ _TensorTuple = tuple[Num[Tensor, "..."], ...]
 
 
 @jaxtyped(typechecker=typechecker)
-def compute_hessian(model: nn.Module, *inputs: Num[Tensor, "..."]) -> Hessian:
+def compute_hessian_old(model: nn.Module, *inputs: Num[Tensor, "..."]) -> Hessian:
     """
     Compute the Hessian of a model with respect to its parameters.
 
@@ -41,3 +41,37 @@ def compute_hessian(model: nn.Module, *inputs: Num[Tensor, "..."]) -> Hessian:
 
     params = dict(model.named_parameters())
     return hessian(wrap_model)(params)
+
+
+@jaxtyped(typechecker=typechecker)
+def compute_hessian(model: nn.Module, *inputs: Num[Tensor, "..."]) -> Hessian:
+    """
+    Compute the Hessian of a model with respect to its parameters.
+
+    Args:
+        model: Network model.
+        inputs: Inputs to the model.
+
+    Returns:
+        Hessian of `model` with respect to its parameters.
+    """
+
+    @jaxtyped(typechecker=typechecker)
+    def functional_forward(trainable_params) -> Num[Tensor, "..."]:
+        """
+        Wrap a model to make it a function of its parameters.
+
+        Args:
+            trainable_params: Dict containing trainable model parameters.
+
+        Returns:
+            Output of `model` with parameters `params`, evaluated on `inputs`.
+        """
+        return functional_call(model, trainable_params, inputs)
+
+    trainable_params = {}
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            trainable_params[name] = param
+
+    return hessian(functional_forward)(trainable_params)
