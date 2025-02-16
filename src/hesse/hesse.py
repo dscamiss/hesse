@@ -7,8 +7,6 @@ from typeguard import typechecked as typechecker
 
 from src.hesse.types import Hessian
 
-_TensorTuple = tuple[Num[Tensor, "..."], ...]
-
 # If the model has any buffers, please use make_functional_with_buffers() instead.
 
 
