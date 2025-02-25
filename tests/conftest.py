@@ -2,11 +2,48 @@
 
 # pylint: disable=invalid-name
 
+from typing import Callable
+
 import pytest
 import torch
 from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
+
+# TODO: Fix type hinting
+
+
+@pytest.fixture(name="commutation_matrix")
+def fixture_commutation_matrix() -> Callable:
+    """Return a function that makes commutation matrices."""
+
+    @torch.no_grad
+    @jaxtyped(typechecker=typechecker)
+    def commutation_matrix(m, n) -> Float[Tensor, "mn mn"]:
+        """
+        Construct the commutation matrix K_{m,n}.
+
+        For an m-by-n input matrix A, K_{m,n} is an mn-by-mn matrix that satisfies
+
+            K_{m,n} vec(A) = vec(A^t),
+
+        where vec() is the column-stacking vectorization map.
+
+        Being a permutation matrix, K_{m,n} is orthogonal and therefore
+
+            vec(A) = K_{m,n}^t vec(A^t).
+
+        Args:
+            m: "Row dimension" argument.
+            n: "Column dimension" argument.
+
+        Returns:
+            Tensor containing K_{m,n}.
+        """
+        indices = torch.arange(m * n).reshape(m, n).T.reshape(-1)
+        return torch.eye(m * n).index_select(0, indices).T
+
+    return commutation_matrix
 
 
 class Bilinear(nn.Module):
@@ -24,19 +61,18 @@ class Bilinear(nn.Module):
         super().__init__()
         self.B = nn.Bilinear(input_dim_1, input_dim_2, 1, bias=False)
 
-    @jaxtyped(typechecker=typechecker)
-    def forward(self, x1: Float[Tensor, " n1"], x2: Float[Tensor, " n2"]) -> Float[Tensor, ""]:
+    def forward(self, x1: Tensor, x2: Tensor) -> Tensor:
         """
         Evaluate model.
 
         Args:
-            x1: First input vector.
-            x2: Second input vector.
+            x1: First input vector(s).
+            x2: Second input vector(s).
 
         Returns:
             Model evaluated at `(x1, x2)`.
         """
-        return self.B(x1, x2).squeeze()
+        return self.B(x1, x2)
 
 
 class DoubleBilinear(nn.Module):
@@ -56,14 +92,13 @@ class DoubleBilinear(nn.Module):
         self.B1 = nn.Parameter(torch.randn(input_dim_1, inner_dim))
         self.B2 = nn.Parameter(torch.randn(inner_dim, input_dim_2))
 
-    @jaxtyped(typechecker=typechecker)
-    def forward(self, x1: Float[Tensor, " n1"], x2: Float[Tensor, " n2"]) -> Float[Tensor, ""]:
+    def forward(self, x1: Tensor, x2: Tensor) -> Tensor:
         """
         Evaluate model.
 
         Args:
-            x1: First input vector.
-            x2: Second input vector.
+            x1: First input vector(s).
+            x2: Second input vector(s).
 
         Returns:
             Model evaluated at `(x1, x2)`.
@@ -87,13 +122,12 @@ class SumNormsSquared(nn.Module):
         self.A1 = nn.Parameter(torch.randn(num_rows, num_cols))
         self.A2 = nn.Parameter(torch.randn(num_rows, num_cols))
 
-    @jaxtyped(typechecker=typechecker)
-    def forward(self, x: Float[Tensor, ""]) -> Float[Tensor, ""]:
+    def forward(self, x: Tensor) -> Tensor:
         """
         Evaluate model.
 
         Args:
-            x: Input scalar.
+            x: Input scalar(s).
 
         Returns:
             Model evaluated at `x`.

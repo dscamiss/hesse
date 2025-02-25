@@ -1,54 +1,14 @@
-"""Test code for hesse.py."""
+"""Test code for `compute_hessian()`."""
 
 # pylint: disable=invalid-name
 
+from typing import Callable
+
 import pytest
 import torch
-from jaxtyping import Float, jaxtyped
-from torch import Tensor, nn
-from typeguard import typechecked as typechecker
+from torch import nn
 
 from src.hesse import compute_hessian
-
-
-@torch.no_grad
-@jaxtyped(typechecker=typechecker)
-def commutation_matrix(m, n) -> Float[Tensor, "mn mn"]:
-    """
-    Construct the commutation matrix K_{m,n}.
-
-    For an m-by-n input matrix A, K_{m,n} is an mn-by-mn matrix that satisfies
-
-        K_{m,n} vec(A) = vec(A^t),
-
-    where vec() is the column-stacking vectorization map.
-
-    Being a permutation matrix, K_{m,n} is orthogonal and therefore
-
-        vec(A) = K_{m,n}^t vec(A^t).
-
-    Args:
-        m: "Row dimension" argument.
-        n: "Column dimension" argument.
-
-    Returns:
-        Tensor containing K_{m,n}.
-    """
-    indices = torch.arange(m * n).reshape(m, n).T.reshape(-1)
-    return torch.eye(m * n).index_select(0, indices).T
-
-
-@torch.no_grad
-def test_commutation_matrix() -> None:
-    """Test `commutation_matrix()`."""
-    A = torch.randn(3, 4)
-    K = commutation_matrix(A.shape[0], A.shape[1])
-
-    err_str = "Error in commutation matrix"
-    # Note: Transpose here since `flatten()` is *row-stacking* vectorization
-    vec_A = A.T.flatten()
-    vec_A_transpose = A.flatten()
-    assert torch.all(K @ vec_A == vec_A_transpose), err_str
 
 
 def test_compute_hessian_bilinear(bilinear: nn.Module) -> None:
@@ -65,14 +25,16 @@ def test_compute_hessian_bilinear(bilinear: nn.Module) -> None:
     # Check Hessian shape
     err_str = "Error in Hessian shape"
     expected_shape = 2 * bilinear.B.weight.shape
-    assert hess["B.weight"]["B.weight"].shape == expected_shape, err_str
+    assert hess["B.weight"]["B.weight"][0].shape == expected_shape, err_str
 
     # Check Hessian values
     err_str = "Error in Hessian values"
-    assert torch.all(hess["B.weight"]["B.weight"] == 0.0), err_str
+    assert torch.all(hess["B.weight"]["B.weight"][0] == 0.0), err_str
 
 
-def test_compute_hessian_double_bilinear(double_bilinear: nn.Module) -> None:
+def test_compute_hessian_double_bilinear(
+    double_bilinear: nn.Module, commutation_matrix: Callable
+) -> None:
     """Test `compute_hessian()` with double-bilinear model."""
     # Make aliases for brevity
     B1 = double_bilinear.B1
