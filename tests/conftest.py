@@ -12,12 +12,12 @@ from typeguard import typechecked as typechecker
 
 
 @pytest.fixture(name="commutation_matrix")
-def fixture_commutation_matrix() -> Callable:
+def fixture_commutation_matrix() -> Callable[[int, int], Float[Tensor, "mn mn"]]:
     """Return a function that makes commutation matrices."""
 
-    @torch.no_grad
+    @torch.no_grad()
     @jaxtyped(typechecker=typechecker)
-    def commutation_matrix(m, n) -> Float[Tensor, "mn mn"]:
+    def commutation_matrix(m: int, n: int) -> Float[Tensor, "mn mn"]:
         """
         Construct the commutation matrix K_{m,n}.
 
@@ -41,7 +41,7 @@ def fixture_commutation_matrix() -> Callable:
         indices = torch.arange(m * n).reshape(m, n).T.reshape(-1)
         return torch.eye(m * n).index_select(0, indices).T
 
-    return commutation_matrix
+    return commutation_matrix  # type: ignore
 
 
 class Bilinear(nn.Module):
@@ -70,7 +70,7 @@ class Bilinear(nn.Module):
         Returns:
             Model evaluated at `(x1, x2)`.
         """
-        return self.B(x1, x2)
+        return self.B(x1, x2)  # type: ignore
 
 
 class DoubleBilinear(nn.Module):
@@ -101,7 +101,7 @@ class DoubleBilinear(nn.Module):
         Returns:
             Model evaluated at `(x1, x2)`.
         """
-        return (x1 @ self.B1) @ (self.B2 @ x2)
+        return (x1 @ self.B1) @ (self.B2 @ x2)  # type: ignore
 
 
 class SumNormsSquared(nn.Module):

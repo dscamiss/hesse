@@ -31,15 +31,17 @@ from torch import Tensor, nn, vmap
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import HessianDict
+from src.hesse.types import HessianDict, Loss, ParamDict
 
 # Note: Here we use `Tensor` type hints here since `jaxtyping` is not
 # compatible with the `BatchedTensor` type used by `vmap()`.
 
 
-def compute_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
+def compute_model_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
     """
     Compute the Hessian of a model with respect to its parameters.
+
+    This function expects `inputs` to have no batch dimension.
 
     Args:
         model: Network model.
@@ -56,18 +58,69 @@ def compute_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
     """
 
     @jaxtyped(typechecker=typechecker)
-    def functional_forward(trainable_params) -> Num[Tensor, "..."]:
+    def functional_forward(params: ParamDict) -> Num[Tensor, "..."]:
         """
-        Wrap `model` to make it a function of its trainable parameters.
+        Wrap `model` to make it a function of specific model parameters.
 
         Args:
-            trainable_params: Dict containing trainable model parameters.
+            params: Specific model parameters to use.
 
         Returns:
-            The output of `model` with trainable parameters specified by
-            `trainable_params`, evaluated at `inputs`.
+            The output of `model` with parameters specified by `params`,
+            evaluated at `inputs`.
         """
-        return functional_call(model, trainable_params, inputs)
+        return functional_call(model, params, inputs)
+
+    trainable_params = {}
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            trainable_params[name] = param
+
+    return hessian(functional_forward)(trainable_params)
+
+
+def compute_loss_hessian(
+    model: nn.Module, criterion: Loss, *inputs: Tensor, targets: Tensor
+) -> HessianDict:
+    """
+    Compute the Hessian of a loss function with respect to model parameters.
+
+    This version expects `inputs` and `targets` to have no batch dimension.
+
+    Args:
+        model: Network model.
+        criterion: Loss criterion.
+        inputs: Inputs to the model.
+        targets: Target outputs from the model.
+
+    Returns:
+        Hessian of the loss function
+
+            `loss = criterion(model(inputs), targets)`
+
+        with respect to model parameters.
+
+        The output `hess` is such that `hess["A"]["B"]` represents the Hessian
+        matrix block corresponding to named parameters `A` and `B`.
+
+    Note:
+        Frozen parameters are not included.
+    """
+
+    @jaxtyped(typechecker=typechecker)
+    def functional_forward(params: ParamDict) -> Num[Tensor, ""]:
+        """
+        Wrap `loss` to make it a function of specific model parameters.
+
+        Args:
+            params: Specific model parameters to use.
+
+        Returns:
+            The value of `criterion(model(inputs), targets)`, where `model`
+            has parameters specified by `params`.
+        """
+        outputs = functional_call(model, params, inputs)
+        return criterion(outputs, targets)
 
     trainable_params = {}
     for name, param in model.named_parameters():
@@ -78,7 +131,7 @@ def compute_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
 
 
 @jaxtyped(typechecker=typechecker)
-def compute_batch_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> HessianDict:
+def compute_batch_model_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> HessianDict:
     """
     Compute the batch Hessian of a model with respect to its parameters.
 
@@ -97,9 +150,9 @@ def compute_batch_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> Hessian
         Frozen parameters are not included.
     """
 
-    def compute_hessian_wrapper(inputs: Tensor) -> Tensor:
+    def compute_model_hessian_wrapper(inputs: Tensor) -> Tensor:
         """
-        Wrap `compute_hessian()` for vectorization with `torch.vmap()`.
+        Wrap `compute_model_hessian()` for vectorization with `torch.vmap()`.
 
         Args:
             inputs: Inputs to the model.
@@ -107,6 +160,6 @@ def compute_batch_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> Hessian
         Returns:
             The output of `model` evaluated at `inputs`.
         """
-        return compute_hessian(model, *inputs)
+        return compute_model_hessian(model, *inputs)
 
-    return vmap(compute_hessian_wrapper)(batch_inputs)
+    return vmap(compute_model_hessian_wrapper)(batch_inputs)

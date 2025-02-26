@@ -7,7 +7,7 @@ from typing import Callable
 import torch
 
 
-@torch.no_grad
+@torch.no_grad()
 def test_commutation_matrix(commutation_matrix: Callable) -> None:
     """Test `commutation_matrix()`."""
     A = torch.randn(3, 4)

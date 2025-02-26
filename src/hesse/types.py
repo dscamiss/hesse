@@ -6,3 +6,4 @@ from torch import Tensor
 
 HessianDict = dict[str, dict[str, Num[Tensor, "..."]]]
 Loss = torch.nn.modules.loss._Loss  # pylint: disable=protected-access
+ParamDict = dict[str, Tensor]
