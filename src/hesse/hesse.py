@@ -26,19 +26,18 @@ To evaluate Hess(f)(x) as a bilinear form, we can use the identity
 where vec() is the row-major vectorization map.
 """
 
-from typing import Any
-
 from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn, vmap
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import BatchHessianDict, HessianDict
+from src.hesse.types import HessianDict
+
+# Note: Here we use `Tensor` type hints here since `jaxtyping` is not
+# compatible with the `BatchedTensor` type used by `vmap()`.
 
 
-# TODO: Fix type hinting for `BatchedTensor`
-@jaxtyped(typechecker=typechecker)
-def compute_hessian(model: nn.Module, *inputs: Any) -> HessianDict:
+def compute_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
     """
     Compute the Hessian of a model with respect to its parameters.
 
@@ -78,7 +77,8 @@ def compute_hessian(model: nn.Module, *inputs: Any) -> HessianDict:
     return hessian(functional_forward)(trainable_params)
 
 
-def compute_batch_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> BatchHessianDict:
+@jaxtyped(typechecker=typechecker)
+def compute_batch_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> HessianDict:
     """
     Compute the batch Hessian of a model with respect to its parameters.
 
@@ -97,7 +97,6 @@ def compute_batch_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> BatchHe
         Frozen parameters are not included.
     """
 
-    # TODO: Fix type hinting for `BatchedTensor`
     def compute_hessian_wrapper(inputs: Tensor) -> Tensor:
         """
         Wrap `compute_hessian()` for vectorization with `torch.vmap()`.

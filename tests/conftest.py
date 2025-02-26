@@ -10,8 +10,6 @@ from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
 
-# TODO: Fix type hinting
-
 
 @pytest.fixture(name="commutation_matrix")
 def fixture_commutation_matrix() -> Callable:
