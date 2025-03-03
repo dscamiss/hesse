@@ -26,6 +26,9 @@ To evaluate Hess(f)(x) as a bilinear form, we can use the identity
 where vec() is the row-major vectorization map.
 """
 
+# Disable "returns Any" errors caused by unhinted PyTorch functions
+# mypy: disable-error-code="no-any-return"
+
 from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn, vmap
 from torch.func import functional_call, hessian
@@ -80,7 +83,7 @@ def model_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
 
 
 @jaxtyped(typechecker=typechecker)
-def batch_model_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> HessianDict:
+def batch_model_hessian(model: nn.Module, *batch_inputs: Num[Tensor, "b ..."]) -> HessianDict:
     """
     Compute the batch Hessian of a model with respect to its parameters.
 
@@ -99,7 +102,7 @@ def batch_model_hessian(model, *batch_inputs: Num[Tensor, "b ..."]) -> HessianDi
         Frozen parameters are not included.
     """
 
-    def model_hessian_wrapper(inputs: Tensor) -> Tensor:
+    def model_hessian_wrapper(inputs: Tensor) -> HessianDict:
         """
         Wrap `model_hessian()` for vectorization with `torch.vmap()`.
 
@@ -165,6 +168,7 @@ def loss_hessian(
     return hessian(functional_forward)(trainable_params)
 
 
+@jaxtyped(typechecker=typechecker)
 def batch_loss_hessian(
     model: nn.Module,
     criterion: Criterion,
@@ -195,7 +199,7 @@ def batch_loss_hessian(
         Frozen parameters are not included.
     """
 
-    def loss_hessian_wrapper(inputs: Tensor, target: Tensor) -> Tensor:
+    def loss_hessian_wrapper(inputs: Tensor, target: Tensor) -> HessianDict:
         """
         Wrap `loss_hessian()` for vectorization with `torch.vmap()`.
 
