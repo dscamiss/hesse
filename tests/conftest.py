@@ -10,6 +10,8 @@ from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
 
+from src.hesse.types import Criterion
+
 
 @pytest.fixture(name="commutation_matrix")
 def fixture_commutation_matrix() -> Callable[[int, int], Float[Tensor, "mn mn"]]:
@@ -167,3 +169,15 @@ def fixture_sum_norms_squared_frozen() -> nn.Module:
     model = SumNormsSquared(2, 3)
     model.A1.requires_grad_(False)
     return model
+
+
+@pytest.fixture(name="batch_size")
+def fixture_batch_size() -> int:
+    """Batch size for input/output data."""
+    return 16
+
+
+@pytest.fixture(name="mse")
+def fixture_mse() -> Criterion:
+    """Make MSE loss criterion."""
+    return nn.MSELoss()
