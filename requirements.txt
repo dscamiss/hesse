@@ -1,0 +1,3 @@
+jaxtyping==0.2.38
+torch==2.4.0
+typeguard==2.13.3
