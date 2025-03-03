@@ -1,5 +1,8 @@
 """Test configuration."""
 
+# Disable "returns Any" warnings caused by unhinted PyTorch functions
+# mypy: disable-error-code="no-any-return"
+
 # pylint: disable=invalid-name
 
 from typing import Callable
@@ -43,7 +46,7 @@ def fixture_commutation_matrix() -> Callable[[int, int], Float[Tensor, "mn mn"]]
         indices = torch.arange(m * n).reshape(m, n).T.reshape(-1)
         return torch.eye(m * n).index_select(0, indices).T
 
-    return commutation_matrix  # type: ignore
+    return commutation_matrix
 
 
 class Bilinear(nn.Module):
@@ -72,7 +75,7 @@ class Bilinear(nn.Module):
         Returns:
             Model evaluated at `(x1, x2)`.
         """
-        return self.B(x1, x2)  # type: ignore
+        return self.B(x1, x2)
 
 
 class DoubleBilinear(nn.Module):
@@ -103,7 +106,7 @@ class DoubleBilinear(nn.Module):
         Returns:
             Model evaluated at `(x1, x2)`.
         """
-        return (x1 @ self.B1) @ (self.B2 @ x2)  # type: ignore
+        return (x1 @ self.B1) @ (self.B2 @ x2)
 
 
 class SumNormsSquared(nn.Module):
