@@ -6,7 +6,7 @@
 ![Python](https://img.shields.io/badge/python-3.10-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 ![Build](https://github.com/dscamiss/hesse/actions/workflows/python-package.yml/badge.svg)
-[![codecov](https://codecov.io/gh/dscamiss/hesse/graph/badge.svg?token=ZWTBITN49T)](https://codecov.io/gh/dscamiss/hesse)
+[![codecov](https://codecov.io/gh/dscamiss/hesse/graph/badge.svg?token=Z3CGGZJ70B)](https://codecov.io/gh/dscamiss/hesse)
 
 PyTorch tools for Hessian-related operations
 
