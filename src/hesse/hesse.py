@@ -24,6 +24,9 @@ To evaluate Hess(f)(x) as a bilinear form, we can use the identity
         = sum_{i,j=1}^k vec(P_i)^t Hess_{i,j}(f)(x) vec(Q_j),
 
 where vec() is the row-major vectorization map.
+
+Note: In this file `Tensor` type hints are used since `jaxtyping` is not
+compatible with the `BatchedTensor` type used by `vmap()`.
 """
 
 # Disable "returns Any" errors caused by unhinted PyTorch functions
@@ -34,13 +37,13 @@ from torch import Tensor, nn, vmap
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import Criterion, HessianDict, ParamDict
+from src.hesse.types import Criterion
 
-# Note: Here we use `Tensor` type hints here since `jaxtyping` is not
-# compatible with the `BatchedTensor` type used by `vmap()`.
+_HessianDict = dict[str, dict[str, Num[Tensor, "..."]]]
+_ParamDict = dict[str, Tensor]
 
 
-def model_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
+def model_hessian(model: nn.Module, *inputs: Tensor) -> _HessianDict:
     """
     Compute the Hessian of a model with respect to its parameters.
 
@@ -61,7 +64,7 @@ def model_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
     """
 
     @jaxtyped(typechecker=typechecker)
-    def functional_forward(params: ParamDict) -> Num[Tensor, "..."]:
+    def functional_forward(params: _ParamDict) -> Num[Tensor, "..."]:
         """
         Wrap `model` to make it a function of specific model parameters.
 
@@ -83,7 +86,7 @@ def model_hessian(model: nn.Module, *inputs: Tensor) -> HessianDict:
 
 
 @jaxtyped(typechecker=typechecker)
-def batch_model_hessian(model: nn.Module, *batch_inputs: Num[Tensor, "b ..."]) -> HessianDict:
+def batch_model_hessian(model: nn.Module, *batch_inputs: Num[Tensor, "b ..."]) -> _HessianDict:
     """
     Compute the batch Hessian of a model with respect to its parameters.
 
@@ -102,7 +105,7 @@ def batch_model_hessian(model: nn.Module, *batch_inputs: Num[Tensor, "b ..."]) -
         Frozen parameters are not included.
     """
 
-    def model_hessian_wrapper(inputs: Tensor) -> HessianDict:
+    def model_hessian_wrapper(inputs: Tensor) -> _HessianDict:
         """
         Wrap `model_hessian()` for vectorization with `torch.vmap()`.
 
@@ -119,7 +122,7 @@ def batch_model_hessian(model: nn.Module, *batch_inputs: Num[Tensor, "b ..."]) -
 
 def loss_hessian(
     model: nn.Module, criterion: Criterion, *inputs: Tensor, target: Tensor
-) -> HessianDict:
+) -> _HessianDict:
     """
     Compute the Hessian of a loss function with respect to model parameters.
 
@@ -146,7 +149,7 @@ def loss_hessian(
     """
 
     @jaxtyped(typechecker=typechecker)
-    def functional_forward(params: ParamDict) -> Num[Tensor, ""]:
+    def functional_forward(params: _ParamDict) -> Num[Tensor, ""]:
         """
         Wrap `loss` to make it a function of specific model parameters.
 
@@ -174,7 +177,7 @@ def batch_loss_hessian(
     criterion: Criterion,
     *batch_inputs: Num[Tensor, "b ..."],
     batch_target: Num[Tensor, "b ..."],
-) -> HessianDict:
+) -> _HessianDict:
     """
     Compute the batch Hessian of a loss function with respect to model parameters.
 
@@ -199,7 +202,7 @@ def batch_loss_hessian(
         Frozen parameters are not included.
     """
 
-    def loss_hessian_wrapper(inputs: Tensor, target: Tensor) -> HessianDict:
+    def loss_hessian_wrapper(inputs: Tensor, target: Tensor) -> _HessianDict:
         """
         Wrap `loss_hessian()` for vectorization with `torch.vmap()`.
 
