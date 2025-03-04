@@ -33,6 +33,26 @@ def test_loss_hessian_bilinear(
     assert hess["B.weight"]["B.weight"].shape == expected_shape, err_str
 
     # Check Hessian values
+    # - Note that
+    #
+    #       d^2 f(B) . (V, W)
+    #           = 2 <x^t V y, x^t W y>
+    #           = 2 tr(x^t V y) tr(x^t W y)
+    #           = 2 tr(V y x^t) tr(y x^t W)
+    #           = 2 vec(V^t)^t vec(y x^t) vec(x y^t)^t vec(W)
+    #           = 2 flat(V) vec(y x^t) vec(x y^t)^t K^t flat(W)
+    #           = 2 flat(V) flat(x y^t) flat(y x^t)^t K^t flat(W),
+    #
+    #   where
+    #
+    #   * tr() is the trace function,
+    #   * vec() is the column-stacking vectorization map,
+    #   * flat() is the row-stacking vectorization map,
+    #   * K is the commutation matrix K_{m,n}.
+    #
+    # - This means that the Hessian is
+    #      Hess = 2 flat(x y^t) flat(y x^t)^t K^t.
+
     err_str = "Error in Hessian values"
     K = commutation_matrix(m, n).requires_grad_(False)
 
