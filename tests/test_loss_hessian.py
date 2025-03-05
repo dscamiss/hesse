@@ -20,12 +20,13 @@ def test_loss_hessian_bilinear(
     m, n = bilinear.B.in1_features, bilinear.B.in2_features
     x1 = torch.randn(m).requires_grad_(False)
     x2 = torch.randn(n).requires_grad_(False)
+    inputs = (x1, x2)
     target = torch.randn([]).requires_grad_(False)
 
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = loss_hessian(bilinear, mse, x1, x2, target=target)
+        hess = loss_hessian(bilinear, mse, inputs, target)
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"

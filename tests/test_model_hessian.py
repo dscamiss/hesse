@@ -16,11 +16,12 @@ def test_model_hessian_bilinear(bilinear: nn.Module) -> None:
     # Make input data
     x1 = torch.randn(bilinear.B.in1_features).requires_grad_(False)
     x2 = torch.randn(bilinear.B.in2_features).requires_grad_(False)
+    inputs = (x1, x2)
 
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = model_hessian(bilinear, x1, x2)
+        hess = model_hessian(bilinear, inputs)
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"
@@ -44,9 +45,10 @@ def test_model_hessian_double_bilinear(
     # Make input data
     x1 = torch.randn(m).requires_grad_(False)
     x2 = torch.randn(p).requires_grad_(False)
+    inputs = (x1, x2)
 
     # Compute Hessian
-    hess = model_hessian(double_bilinear, x1, x2)
+    hess = model_hessian(double_bilinear, inputs)
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
@@ -130,9 +132,10 @@ def test_model_hessian_double_bilinear_frozen(double_bilinear_frozen: nn.Module)
     # Make input data
     x1 = torch.randn(m).requires_grad_(False)
     x2 = torch.randn(p).requires_grad_(False)
+    inputs = (x1, x2)
 
     # Compute Hessian
-    hess = model_hessian(double_bilinear_frozen, x1, x2)
+    hess = model_hessian(double_bilinear_frozen, inputs)
 
     # Check keys
     err_str = "Key error"
