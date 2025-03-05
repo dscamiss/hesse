@@ -88,7 +88,7 @@ def make_tuple(obj: Any) -> tuple:
 @jaxtyped(typechecker=typechecker)
 def model_hessian(model: nn.Module, inputs: _Inputs, params: _Params = None) -> _HessianDict:
     """
-    Compute the Hessian of a model with respect to its parameters.
+    Hessian of a model with respect to its parameters.
 
     This function expects `inputs` to have no batch dimension.
 
@@ -120,8 +120,8 @@ def model_hessian(model: nn.Module, inputs: _Inputs, params: _Params = None) -> 
             _params: Specific model parameters to use.
 
         Returns:
-            The output of `model` with parameters specified by `params`,
-            evaluated at `inputs`.
+            The value of `model(inputs)`, where `model` has parameters
+            specified by `_params`.
         """
         return functional_call(model, _params, inputs)
 
@@ -137,7 +137,7 @@ def batch_model_hessian(
     model: nn.Module, batch_inputs: _BatchInputs, params: _Params = None
 ) -> _HessianDict:
     """
-    Compute the batch Hessian of a model with respect to its parameters.
+    Batch Hessian of a model with respect to its parameters.
 
     Args:
         model: Network model.
@@ -181,7 +181,7 @@ def loss_hessian(
     params: _Params = None,
 ) -> _HessianDict:
     """
-    Compute the Hessian of a loss function with respect to model parameters.
+    Hessian of a loss function with respect to model parameters.
 
     This version expects `inputs` and `targets` to have no batch dimension.
 
@@ -211,24 +211,25 @@ def loss_hessian(
 
     # Type hint is `_TensorDict' here since `hessian()` changes data type
     @jaxtyped(typechecker=typechecker)
-    def functional_forward(params: _TensorDict) -> Num[Tensor, ""]:
+    def functional_loss(_params: _TensorDict) -> Num[Tensor, ""]:
         """
         Wrap `loss` to make it a function of specific model parameters.
 
         Args:
-            params: Specific model parameters to use.
+            _params: Specific model parameters to use.
 
         Returns:
             The value of `criterion(model(inputs), targets)`, where `model`
-            has parameters specified by `params`.
+            has parameters specified by `_params`.
         """
-        output = functional_call(model, params, inputs)
+        output = functional_call(model, _params, inputs)
         return criterion(output, target)
 
     hessian_params = select_hessian_params(model, params)
     if not hessian_params:
         raise ValueError("No Hessian parameters selected")
-    return hessian(functional_forward)(hessian_params)
+
+    return hessian(functional_loss)(hessian_params)
 
 
 @jaxtyped(typechecker=typechecker)
@@ -240,7 +241,7 @@ def batch_loss_hessian(
     params: _Params = None,
 ) -> _HessianDict:
     """
-    Compute the batch Hessian of a loss function w.r.t. model parameters.
+    Batch Hessian of a loss function with respect to model parameters.
 
     Args:
         model: Network model.
