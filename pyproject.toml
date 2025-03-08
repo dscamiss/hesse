@@ -21,6 +21,7 @@ ignore = [
     "D105",  # missing docstring in magic method
     "D107",  # missing docstring in __init__
     "D202",  # no blank lines allowed after function docstring
+    "E203",  # whitespace before ":"
     "F722",  # forward annotation syntax error
     "W503",  # line break before binary operator
     "DCO010",  # docstring missing on function/method/class
