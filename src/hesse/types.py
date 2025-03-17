@@ -9,8 +9,11 @@ from torch import Tensor
 Criterion = torch.nn.modules.loss._Loss  # pylint: disable=protected-access
 
 HessianDict = dict[str, dict[str, Num[Tensor, "..."]]]
-Params = Optional[Iterable[str]]
 Inputs = Union[Tensor, tuple[Tensor, ...]]
-BatchInputs = Union[Num[Tensor, "b ..."], tuple[Num[Tensor, "b ..."], ...]]
 Target = Union[Tensor, tuple[Tensor, ...]]
+
+BatchHessianDict = dict[str, dict[str, Num[Tensor, "b ..."]]]
+BatchInputs = Union[Num[Tensor, "b ..."], tuple[Num[Tensor, "b ..."], ...]]
 BatchTarget = Num[Tensor, "b ..."]
+
+Params = Optional[Iterable[str]]

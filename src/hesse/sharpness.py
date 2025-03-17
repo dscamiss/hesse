@@ -5,9 +5,8 @@ from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
 
-from src.hesse.hessian_dict import model_hessian_dict
+from src.hesse.hessian_matrix import model_hessian_matrix
 from src.hesse.types import Inputs, Params
-from src.hesse.utils import make_hessian_matrix
 
 _Scalar = Num[Tensor, ""]
 _BatchScalar = Num[Tensor, "b "]
@@ -29,11 +28,8 @@ def model_sharpness(model: nn.Module, inputs: Inputs, params: Params = None) -> 
     Returns:
         Sharpness of `model` with respect to its parameters.
     """
-    # Make model Hessian
-    hessian = model_hessian_dict(model, inputs, params)
-
     # Make Hessian matrix
-    hessian_matrix = make_hessian_matrix(model, hessian)
+    hessian_matrix = model_hessian_matrix(model, inputs, params)
 
     # Return largest eigenvalue
     return torch.lobpcg(hessian_matrix, k=1)[0][0]

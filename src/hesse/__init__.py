@@ -12,12 +12,10 @@ from src.hesse.sharpness import (
     loss_sharpness,
     model_sharpness,
 )
-from src.hesse.utils import make_hessian_matrix
 
 __all__ = [
     "batch_loss_hessian_dict",
     "batch_model_hessian_dict",
-    "make_hessian_matrix",
     "model_hessian_dict",
     "loss_hessian_dict",
     "model_sharpness",

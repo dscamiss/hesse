@@ -7,7 +7,8 @@ from typing import Callable
 import torch
 from torch import nn
 
-from src.hesse import make_hessian_matrix, model_hessian_dict
+from src.hesse import model_hessian_dict
+from src.hesse.hessian_matrix import hessian_matrix_from_hessian_dict
 
 
 @torch.no_grad()
@@ -24,8 +25,8 @@ def test_commutation_matrix(commutation_matrix: Callable) -> None:
 
 
 @torch.no_grad()
-def test_make_hessian_matrix(double_bilinear: nn.Module) -> None:
-    """Test `make_hessian_matrix()` with double-bilinear model."""
+def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module) -> None:
+    """Test `hessian_matrix_from_hessian_dict()` with double-bilinear model."""
     # Make aliases for brevity
     B1 = double_bilinear.B1
     B2 = double_bilinear.B2
@@ -37,17 +38,17 @@ def test_make_hessian_matrix(double_bilinear: nn.Module) -> None:
     inputs = (x1, x2)
 
     # Compute Hessian
-    hessian = model_hessian_dict(double_bilinear, inputs)
+    hessian_dict = model_hessian_dict(double_bilinear, inputs)
 
     # Make Hessian matrix
-    hessian_matrix = make_hessian_matrix(double_bilinear, hessian)
+    hessian_matrix = hessian_matrix_from_hessian_dict(double_bilinear, hessian_dict)
 
     # Check matrix entries
     err_str = "Error in Hessian matrix values"
-    A = hessian["B1"]["B1"].view(m * n, m * n)
-    B = hessian["B1"]["B2"].view(m * n, n * p)
-    C = hessian["B2"]["B1"].view(n * p, m * n)
-    D = hessian["B2"]["B2"].view(n * p, n * p)
+    A = hessian_dict["B1"]["B1"].view(m * n, m * n)
+    B = hessian_dict["B1"]["B2"].view(m * n, n * p)
+    C = hessian_dict["B2"]["B1"].view(n * p, m * n)
+    D = hessian_dict["B2"]["B2"].view(n * p, n * p)
     row_0 = torch.cat((A, B), dim=1)
     row_1 = torch.cat((C, D), dim=1)
     expected_hessian_matrix = torch.cat((row_0, row_1), dim=0)

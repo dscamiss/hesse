@@ -1,5 +1,5 @@
 """
-Hessian-related operations.
+Helper functions to compute Hessian data.
 
 The functions in this module are concerned with Hessians of models with
 respect to their parameters.
