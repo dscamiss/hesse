@@ -184,7 +184,7 @@ def loss_hessian_matrix(
     """
     Hessian of a loss function with respect to model parameters.
 
-    This version expects `inputs` and `targets` to have no batch dimension.
+    This version expects `inputs` and `target` to have no batch dimension.
 
     Args:
         model: Network model.
@@ -221,7 +221,8 @@ def batch_loss_hessian_matrix(
         criterion: Loss criterion.
         batch_inputs: Batch model inputs.
         batch_target: Batch target model output.
-        params: Specific model parameters to use.
+        params: Specific model parameters to use.  The default value is `None`
+            which means use all model parameters which are not frozen.
 
     Returns:
         Batch Hessian of the loss function

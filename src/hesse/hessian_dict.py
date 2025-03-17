@@ -50,7 +50,8 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
 
     Args:
         model: Network model.
-        params: Specific model parameters to use.
+        params: Specific model parameters to use.  The default value is `None`
+            which means use all model parameters which are not frozen.
 
     Returns:
         Dict containing Hessian parameters.
@@ -177,7 +178,7 @@ def loss_hessian_dict(
     """
     Hessian of a loss function with respect to model parameters.
 
-    This version expects `inputs` and `targets` to have no batch dimension.
+    This version expects `inputs` and `target` to have no batch dimension.
 
     Args:
         model: Network model.
@@ -242,7 +243,8 @@ def batch_loss_hessian_dict(
         criterion: Loss criterion.
         batch_inputs: Batch model inputs.
         batch_target: Batch target model output.
-        params: Specific model parameters to use.
+        params: Specific model parameters to use.  The default value is `None`
+            which means use all model parameters which are not frozen.
 
     Returns:
         Batch Hessian of the loss function
@@ -255,7 +257,7 @@ def batch_loss_hessian_dict(
         Hessian matrix block corresponding to batch `b` and named parameters
         `A` and `B`.
     """
-    # Ensure `inputs` is always a tuple
+    # Ensure `batch_inputs` is always a tuple
     batch_inputs = make_tuple(batch_inputs)
 
     # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
