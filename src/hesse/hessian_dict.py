@@ -29,14 +29,13 @@ where vec() is the row-major vectorization map.
 # Next line disables "returns Any" errors caused by unhinted PyTorch functions
 # mypy: disable-error-code="no-any-return"
 
-from typing import Any
-
 from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn, vmap
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
 from src.hesse.types import BatchInputs, BatchTarget, Criterion, HessianDict, Inputs, Params, Target
+from src.hesse.utils import make_tuple
 
 _ParamDict = dict[str, nn.Parameter]
 _TensorDict = dict[str, Tensor]
@@ -64,20 +63,6 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
     return hessian_params
 
 
-def make_tuple(obj: Any) -> tuple:
-    """
-    Make object into tuple.
-
-    Args:
-        obj: Input object.
-
-    Returns:
-        This function returns `obj` if `obj` is a tuple.  Otherwise, it
-        returns the 1-tuple containing `obj`.
-    """
-    return obj if isinstance(obj, tuple) else (obj,)
-
-
 @jaxtyped(typechecker=typechecker)
 def model_hessian_dict(model: nn.Module, inputs: Inputs, params: Params = None) -> HessianDict:
     """
@@ -101,7 +86,7 @@ def model_hessian_dict(model: nn.Module, inputs: Inputs, params: Params = None) 
     Raises:
         ValueError: If any arguments are invalid.
     """
-    # Ensure `inputs` is always a tuple
+    # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
 
     # Type hint is `_TensorDict' here since `hessian()` changes data type
@@ -147,7 +132,7 @@ def batch_model_hessian_dict(
         Hessian matrix block corresponding to batch `b` and named parameters
         `A` and `B`.
     """
-    # Ensure `batch_inputs` is always a tuple
+    # Ensure `batch_inputs` is a tuple
     batch_inputs = make_tuple(batch_inputs)
 
     # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
@@ -201,7 +186,7 @@ def loss_hessian_dict(
     Raises:
         ValueError: If any arguments are invalid.
     """
-    # Ensure `inputs` is always a tuple
+    # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
 
     # Type hint is `_TensorDict' here since `hessian()` changes data type
@@ -257,7 +242,7 @@ def batch_loss_hessian_dict(
         Hessian matrix block corresponding to batch `b` and named parameters
         `A` and `B`.
     """
-    # Ensure `batch_inputs` is always a tuple
+    # Ensure `batch_inputs` is a tuple
     batch_inputs = make_tuple(batch_inputs)
 
     # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not

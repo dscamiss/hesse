@@ -15,6 +15,7 @@ from src.hesse.hessian_matrix import (
     model_hessian_matrix,
 )
 from src.hesse.types import BatchInputs, BatchTarget, Criterion, Inputs, Params, Target
+from src.hesse.utils import make_tuple
 
 _Scalar = Num[Tensor, ""]
 _BatchScalar = Num[Tensor, "b "]
@@ -105,11 +106,16 @@ def batch_model_sharpness(
         The output `sharpness` is such that `sharpness[b]` is the sharpness
         corresponding to batch `b`.
     """
+    # Ensure `batch_inputs` is a tuple
+    # - This is only needed here to get the batch size, and happens in the
+    #   call to `batch_model_hessian_matrix()` anyway
+    batch_inputs = make_tuple(batch_inputs)
+
     # Make batch Hessian matrix
     batch_hessian_matrix = batch_model_hessian_matrix(model, batch_inputs, params)
 
     # Allocate batch sharpness
-    batch_size = batch_inputs.shape[0]
+    batch_size = batch_inputs[0].shape[0]
     batch_sharpness = torch.zeros(batch_size)
 
     # Populate batch sharpness
@@ -181,13 +187,18 @@ def batch_loss_sharpness(
         The output `sharpness` is such that `sharpness[b]` is the sharpness
         corresponding to batch `b`.
     """
+    # Ensure `batch_inputs` is a tuple
+    # - This is only needed here to get the batch size, and happens in the
+    #   call to `batch_loss_hessian_matrix()` anyway
+    batch_inputs = make_tuple(batch_inputs)
+
     # Make batch Hessian matrix
     batch_hessian_matrix = batch_loss_hessian_matrix(
         model, criterion, batch_inputs, batch_target, params
     )
 
     # Allocate batch sharpness
-    batch_size = batch_inputs.shape[0]
+    batch_size = batch_inputs[0].shape[0]
     batch_sharpness = torch.zeros(batch_size)
 
     # Populate batch sharpness
