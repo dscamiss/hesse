@@ -7,8 +7,7 @@ from typing import Callable
 import torch
 from torch import nn
 
-from src.hesse import model_hessian
-from src.hesse import make_hessian_matrix
+from src.hesse import make_hessian_matrix, model_hessian_dict
 
 
 @torch.no_grad()
@@ -38,7 +37,7 @@ def test_make_hessian_matrix(double_bilinear: nn.Module) -> None:
     inputs = (x1, x2)
 
     # Compute Hessian
-    hessian = model_hessian(double_bilinear, inputs)
+    hessian = model_hessian_dict(double_bilinear, inputs)
 
     # Make Hessian matrix
     hessian_matrix = make_hessian_matrix(double_bilinear, hessian)

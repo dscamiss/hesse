@@ -78,7 +78,7 @@ def make_tuple(obj: Any) -> tuple:
 
 
 @jaxtyped(typechecker=typechecker)
-def model_hessian(model: nn.Module, inputs: Inputs, params: Params = None) -> HessianDict:
+def model_hessian_dict(model: nn.Module, inputs: Inputs, params: Params = None) -> HessianDict:
     """
     Hessian of a model with respect to its parameters.
 
@@ -91,7 +91,8 @@ def model_hessian(model: nn.Module, inputs: Inputs, params: Params = None) -> He
             which means use all model parameters which are not frozen.
 
     Returns:
-        Hessian of `model` with respect to its parameters.
+        Hessian of `model` with respect to its parameters, represented as a
+        dict.
 
         The output `hess` is such that `hess["A"]["B"]` represents the Hessian
         matrix block corresponding to named parameters `A` and `B`.
@@ -125,7 +126,7 @@ def model_hessian(model: nn.Module, inputs: Inputs, params: Params = None) -> He
 
 
 @jaxtyped(typechecker=typechecker)
-def batch_model_hessian(
+def batch_model_hessian_dict(
     model: nn.Module, batch_inputs: BatchInputs, params: Params = None
 ) -> HessianDict:
     """
@@ -138,7 +139,8 @@ def batch_model_hessian(
             which means use all model parameters which are not frozen.
 
     Returns:
-        Batch Hessian of `model` with respect to its parameters.
+        Batch Hessian of `model` with respect to its parameters, represented
+        as a dict.
 
         The output `hess` is such that `hess["A"]["B"][b, :]` represents the
         Hessian matrix block corresponding to batch `b` and named parameters
@@ -149,9 +151,9 @@ def batch_model_hessian(
 
     # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
     # compatible with the `BatchedTensor` type produced by `vmap()`.
-    def model_hessian_wrapper(inputs: Tensor) -> HessianDict:
+    def model_hessian_dict_wrapper(inputs: Tensor) -> HessianDict:
         """
-        Wrap `model_hessian()` for vectorization with `torch.vmap()`.
+        Wrap `model_hessian_dict()` for vectorization with `torch.vmap()`.
 
         Args:
             inputs: Model inputs.
@@ -159,13 +161,13 @@ def batch_model_hessian(
         Returns:
             Hessian result for the specified model inputs.
         """
-        return model_hessian(model, inputs, params)
+        return model_hessian_dict(model, inputs, params)
 
-    return vmap(model_hessian_wrapper)(batch_inputs)
+    return vmap(model_hessian_dict_wrapper)(batch_inputs)
 
 
 @jaxtyped(typechecker=typechecker)
-def loss_hessian(
+def loss_hessian_dict(
     model: nn.Module,
     criterion: Criterion,
     inputs: Inputs,
@@ -190,7 +192,7 @@ def loss_hessian(
 
             `loss = criterion(model(inputs), target)`
 
-        with respect to model parameters.
+        with respect to model parameters, represented as a dict.
 
         The output `hess` is such that `hess["A"]["B"]` represents the Hessian
         matrix block corresponding to named parameters `A` and `B`.
@@ -225,7 +227,7 @@ def loss_hessian(
 
 
 @jaxtyped(typechecker=typechecker)
-def batch_loss_hessian(
+def batch_loss_hessian_dict(
     model: nn.Module,
     criterion: Criterion,
     batch_inputs: BatchInputs,
@@ -247,7 +249,7 @@ def batch_loss_hessian(
 
             `loss = criterion(model(inputs), target)`
 
-        with respect to the specified model parameters.
+        with respect to the specified model parameters, represented as a dict.
 
         The output `hess` is such that `hess["A"]["B"][b, :]` represents the
         Hessian matrix block corresponding to batch `b` and named parameters
@@ -258,9 +260,9 @@ def batch_loss_hessian(
 
     # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
     # compatible with the `BatchedTensor` type produced by `vmap()`.
-    def loss_hessian_wrapper(inputs: Tensor, target: Tensor) -> HessianDict:
+    def loss_hessian_dict_wrapper(inputs: Tensor, target: Tensor) -> HessianDict:
         """
-        Wrap `loss_hessian()` for vectorization with `torch.vmap()`.
+        Wrap `loss_hessian_dict()` for vectorization with `torch.vmap()`.
 
         Args:
             inputs: Model inputs.
@@ -269,6 +271,6 @@ def batch_loss_hessian(
         Returns:
             Hessian result for the specified model inputs and target.
         """
-        return loss_hessian(model, criterion, inputs, target, params)
+        return loss_hessian_dict(model, criterion, inputs, target, params)
 
-    return vmap(loss_hessian_wrapper)(batch_inputs, batch_target)
+    return vmap(loss_hessian_dict_wrapper)(batch_inputs, batch_target)

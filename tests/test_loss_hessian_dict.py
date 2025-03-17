@@ -1,4 +1,4 @@
-"""Test code for `loss_hessian()`."""
+"""Test code for `loss_hessian_dict()`."""
 
 # pylint: disable=invalid-name
 
@@ -8,7 +8,7 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import loss_hessian
+from src.hesse import loss_hessian_dict
 from src.hesse.types import Criterion
 
 
@@ -26,7 +26,7 @@ def test_loss_hessian_bilinear(
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = loss_hessian(bilinear, mse, inputs, target)
+        hess = loss_hessian_dict(bilinear, mse, inputs, target)
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"

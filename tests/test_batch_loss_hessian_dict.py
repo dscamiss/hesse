@@ -1,4 +1,4 @@
-"""Test code for `batch_loss_hessian()`."""
+"""Test code for `batch_loss_hessian_dict()`."""
 
 # pylint: disable=invalid-name
 
@@ -8,11 +8,11 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import batch_loss_hessian
+from src.hesse import batch_loss_hessian_dict
 from src.hesse.types import Criterion
 
 
-def test_batch_loss_hessian_bilinear(
+def test_batch_loss_hessian_dict_bilinear(
     bilinear: nn.Module, commutation_matrix: Callable, mse: Criterion, batch_size: int
 ) -> None:
     """Test with bilinear model."""
@@ -26,7 +26,7 @@ def test_batch_loss_hessian_bilinear(
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = batch_loss_hessian(bilinear, mse, batch_inputs, batch_target)
+        hess = batch_loss_hessian_dict(bilinear, mse, batch_inputs, batch_target)
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"

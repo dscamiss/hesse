@@ -1,4 +1,4 @@
-"""Test code for `batch_model_hessian()`."""
+"""Test code for `batch_model_hessian_dict()`."""
 
 # pylint: disable=invalid-name
 
@@ -8,10 +8,10 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import batch_model_hessian
+from src.hesse import batch_model_hessian_dict
 
 
-def test_batch_model_hessian_bilinear(bilinear: nn.Module, batch_size: int) -> None:
+def test_batch_model_hessian_dict_bilinear(bilinear: nn.Module, batch_size: int) -> None:
     """Test with bilinear model."""
     # Make input data
     x1 = torch.randn(batch_size, bilinear.B.in1_features).requires_grad_(False)
@@ -21,7 +21,7 @@ def test_batch_model_hessian_bilinear(bilinear: nn.Module, batch_size: int) -> N
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = batch_model_hessian(bilinear, batch_inputs)
+        hess = batch_model_hessian_dict(bilinear, batch_inputs)
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"
@@ -35,7 +35,7 @@ def test_batch_model_hessian_bilinear(bilinear: nn.Module, batch_size: int) -> N
         assert torch.all(hess["B.weight"]["B.weight"][batch] == 0.0), err_str
 
 
-def test_batch_model_hessian_double_bilinear(
+def test_batch_model_hessian_dict_double_bilinear(
     double_bilinear: nn.Module, commutation_matrix: Callable, batch_size: int
 ) -> None:
     """Test with double-bilinear model."""
@@ -50,7 +50,7 @@ def test_batch_model_hessian_double_bilinear(
     batch_inputs = (x1, x2)
 
     # Compute Hessian
-    hess = batch_model_hessian(double_bilinear, batch_inputs)
+    hess = batch_model_hessian_dict(double_bilinear, batch_inputs)
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
@@ -93,7 +93,7 @@ def test_batch_model_hessian_double_bilinear(
     assert torch.all(hess["B2"]["B2"] == 0.0), err_str
 
 
-def test_batch_model_hessian_double_bilinear_frozen(
+def test_batch_model_hessian_dict_double_bilinear_frozen(
     double_bilinear_frozen: nn.Module, batch_size: int
 ) -> None:
     """Test with frozen double-bilinear model."""
@@ -108,7 +108,7 @@ def test_batch_model_hessian_double_bilinear_frozen(
     batch_inputs = (x1, x2)
 
     # Compute Hessian
-    hess = batch_model_hessian(double_bilinear_frozen, batch_inputs)
+    hess = batch_model_hessian_dict(double_bilinear_frozen, batch_inputs)
 
     # Check keys
     err_str = "Key error"
@@ -129,7 +129,7 @@ def test_batch_model_hessian_double_bilinear_frozen(
     assert torch.all(hess["B2"]["B2"] == 0.0), err_str
 
 
-def test_batch_model_hessian_sum_norms_squared(
+def test_batch_model_hessian_dict_sum_norms_squared(
     sum_norms_squared: nn.Module, batch_size: int
 ) -> None:
     """Test with sum-norms-squared model."""
@@ -142,7 +142,7 @@ def test_batch_model_hessian_sum_norms_squared(
     x = torch.randn(batch_size).requires_grad_(False)
 
     # Compute Hessian
-    hess = batch_model_hessian(sum_norms_squared, x)
+    hess = batch_model_hessian_dict(sum_norms_squared, x)
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
@@ -184,7 +184,7 @@ def test_batch_model_hessian_sum_norms_squared(
         assert torch.allclose(hess["A2"]["A2"][batch].view(m * n, m * n), expected_value), err_str
 
 
-def test_batch_model_hessian_sum_norms_squared_frozen(
+def test_batch_model_hessian_dict_sum_norms_squared_frozen(
     sum_norms_squared_frozen: nn.Module, batch_size: int
 ) -> None:
     """Test with frozen sum-norms-squared model."""
@@ -197,7 +197,7 @@ def test_batch_model_hessian_sum_norms_squared_frozen(
     x = torch.randn(batch_size).requires_grad_(False)
 
     # Compute Hessian
-    hess = batch_model_hessian(sum_norms_squared_frozen, x)
+    hess = batch_model_hessian_dict(sum_norms_squared_frozen, x)
 
     # Check keys
     err_str = "Key error"
