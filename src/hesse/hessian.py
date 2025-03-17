@@ -29,28 +29,20 @@ where vec() is the row-major vectorization map.
 # Next line disables "returns Any" errors caused by unhinted PyTorch functions
 # mypy: disable-error-code="no-any-return"
 
-from typing import Any, Iterable, Optional, Union
+from typing import Any
 
 from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn, vmap
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import Criterion
-
-_HessianDict = dict[str, dict[str, Num[Tensor, "..."]]]
+from src.hesse.types import BatchInputs, BatchTarget, Criterion, HessianDict, Inputs, Params, Target
 
 _ParamDict = dict[str, nn.Parameter]
 _TensorDict = dict[str, Tensor]
 
-_Params = Optional[Iterable[str]]
-_Inputs = Union[Tensor, tuple[Tensor, ...]]
-_BatchInputs = Union[Num[Tensor, "b ..."], tuple[Num[Tensor, "b ..."], ...]]
-_Target = Union[Tensor, tuple[Tensor, ...]]
-_BatchTarget = Num[Tensor, "b ..."]
 
-
-def select_hessian_params(model: nn.Module, params: _Params = None) -> _ParamDict:
+def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict:
     """
     Select Hessian parameters to use.
 
@@ -86,7 +78,7 @@ def make_tuple(obj: Any) -> tuple:
 
 
 @jaxtyped(typechecker=typechecker)
-def model_hessian(model: nn.Module, inputs: _Inputs, params: _Params = None) -> _HessianDict:
+def model_hessian(model: nn.Module, inputs: Inputs, params: Params = None) -> HessianDict:
     """
     Hessian of a model with respect to its parameters.
 
@@ -134,8 +126,8 @@ def model_hessian(model: nn.Module, inputs: _Inputs, params: _Params = None) -> 
 
 @jaxtyped(typechecker=typechecker)
 def batch_model_hessian(
-    model: nn.Module, batch_inputs: _BatchInputs, params: _Params = None
-) -> _HessianDict:
+    model: nn.Module, batch_inputs: BatchInputs, params: Params = None
+) -> HessianDict:
     """
     Batch Hessian of a model with respect to its parameters.
 
@@ -157,7 +149,7 @@ def batch_model_hessian(
 
     # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
     # compatible with the `BatchedTensor` type produced by `vmap()`.
-    def model_hessian_wrapper(inputs: Tensor) -> _HessianDict:
+    def model_hessian_wrapper(inputs: Tensor) -> HessianDict:
         """
         Wrap `model_hessian()` for vectorization with `torch.vmap()`.
 
@@ -176,10 +168,10 @@ def batch_model_hessian(
 def loss_hessian(
     model: nn.Module,
     criterion: Criterion,
-    inputs: _Inputs,
-    target: _Target,
-    params: _Params = None,
-) -> _HessianDict:
+    inputs: Inputs,
+    target: Target,
+    params: Params = None,
+) -> HessianDict:
     """
     Hessian of a loss function with respect to model parameters.
 
@@ -236,10 +228,10 @@ def loss_hessian(
 def batch_loss_hessian(
     model: nn.Module,
     criterion: Criterion,
-    batch_inputs: _BatchInputs,
-    batch_target: _BatchTarget,
-    params: _Params = None,
-) -> _HessianDict:
+    batch_inputs: BatchInputs,
+    batch_target: BatchTarget,
+    params: Params = None,
+) -> HessianDict:
     """
     Batch Hessian of a loss function with respect to model parameters.
 
@@ -266,7 +258,7 @@ def batch_loss_hessian(
 
     # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
     # compatible with the `BatchedTensor` type produced by `vmap()`.
-    def loss_hessian_wrapper(inputs: Tensor, target: Tensor) -> _HessianDict:
+    def loss_hessian_wrapper(inputs: Tensor, target: Tensor) -> HessianDict:
         """
         Wrap `loss_hessian()` for vectorization with `torch.vmap()`.
 
