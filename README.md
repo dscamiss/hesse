@@ -20,7 +20,7 @@ respect to the parameters of `model`.  To do so, we have to
 * Compute its largest absolute eigenvalue.
 
 More work is needed if we are only interested in the Hessian with respect to a subset of the parameters of `model`, 
-if we are interestedin using diagonal approximations of Hessians, if batch data is involved, and so on.
+if we are interested in using diagonal approximations of Hessians, if batch data is involved, and so on.
 
 The goal of `hesse` is to provide simple functions that streamline the computation of Hessians and Hessian-related 
 quantities.  For example, the sharpness computation reduces to
