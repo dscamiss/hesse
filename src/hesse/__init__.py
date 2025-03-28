@@ -38,5 +38,5 @@ __all__ = [
 ]
 
 # The call to `importlib.metadata.version()` fails in GitHub CI
-if os.getenv("GITHUB_ACTIONS") == "true":
+if not os.getenv("GITHUB_ACTIONS"):
     __version__ = importlib.metadata.version("hesse")
