@@ -33,7 +33,7 @@ def test_model_hessian_dict_bilinear(bilinear: nn.Module) -> None:
     assert torch.all(hess["B.weight"]["B.weight"][0] == 0.0), err_str
 
 
-@pytest.mark.parametrize("diagonal_only", [False, True])
+@pytest.mark.parametrize("diagonal_only", [True, False])
 def test_model_hessian_dict_double_bilinear(
     double_bilinear: nn.Module, commutation_matrix: Callable, diagonal_only: bool
 ) -> None:
@@ -171,7 +171,7 @@ def test_model_hessian_dict_double_bilinear_frozen(double_bilinear_frozen: nn.Mo
     assert torch.all(hess["B2"]["B2"] == 0.0), err_str
 
 
-@pytest.mark.parametrize("diagonal_only", [False, True])
+@pytest.mark.parametrize("diagonal_only", [True, False])
 def test_model_hessian_dict_sum_norms_squared(
     sum_norms_squared: nn.Module, diagonal_only: bool
 ) -> None:

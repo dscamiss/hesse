@@ -125,7 +125,7 @@ def model_hessian_dict(
 
 @jaxtyped(typechecker=typechecker)
 def batch_model_hessian_dict(
-    model: nn.Module, batch_inputs: BatchInputs, params: Params = None
+    model: nn.Module, batch_inputs: BatchInputs, params: Params = None, diagonal_only: bool = False
 ) -> HessianDict:
     """
     Batch Hessian of a model with respect to its parameters.
@@ -133,8 +133,9 @@ def batch_model_hessian_dict(
     Args:
         model: Network model.
         batch_inputs: Batch model inputs.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Batch Hessian of `model` with respect to its parameters, represented
@@ -159,7 +160,7 @@ def batch_model_hessian_dict(
         Returns:
             Hessian result for the specified model inputs.
         """
-        return model_hessian_dict(model, inputs, params)
+        return model_hessian_dict(model, inputs, params, diagonal_only)
 
     return vmap(model_hessian_dict_wrapper)(batch_inputs)
 

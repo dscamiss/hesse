@@ -35,8 +35,9 @@ def test_batch_model_hessian_dict_bilinear(bilinear: nn.Module, batch_size: int)
         assert torch.all(hess["B.weight"]["B.weight"][batch] == 0.0), err_str
 
 
+@pytest.mark.parametrize("diagonal_only", [True, False])
 def test_batch_model_hessian_dict_double_bilinear(
-    double_bilinear: nn.Module, commutation_matrix: Callable, batch_size: int
+    double_bilinear: nn.Module, commutation_matrix: Callable, batch_size: int, diagonal_only: bool
 ) -> None:
     """Test with double-bilinear model."""
     # Make aliases for brevity
@@ -50,7 +51,17 @@ def test_batch_model_hessian_dict_double_bilinear(
     batch_inputs = (x1, x2)
 
     # Compute Hessian
-    hess = batch_model_hessian_dict(double_bilinear, batch_inputs)
+    hess = batch_model_hessian_dict(double_bilinear, batch_inputs, diagonal_only=diagonal_only)
+
+    # Check keys
+    err_str = "Key error"
+    assert list(hess.keys()) == ["B1", "B2"], err_str
+    if not diagonal_only:
+        assert list(hess["B1"].keys()) == ["B1", "B2"], err_str
+        assert list(hess["B2"].keys()) == ["B1", "B2"], err_str
+    else:
+        assert list(hess["B1"].keys()) == ["B1"], err_str
+        assert list(hess["B2"].keys()) == ["B2"], err_str
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
@@ -61,12 +72,14 @@ def test_batch_model_hessian_dict_double_bilinear(
     assert hess["B1"]["B1"].shape == expected_shape, err_str
 
     # Check (B1, B2) Hessian shape
-    expected_shape = output_shape + B1.shape + B2.shape
-    assert hess["B1"]["B2"].shape == expected_shape, err_str
+    if not diagonal_only:
+        expected_shape = output_shape + B1.shape + B2.shape
+        assert hess["B1"]["B2"].shape == expected_shape, err_str
 
     # Check (B2, B1) Hessian shape
-    expected_shape = output_shape + B2.shape + B1.shape
-    assert hess["B2"]["B1"].shape == expected_shape, err_str
+    if not diagonal_only:
+        expected_shape = output_shape + B2.shape + B1.shape
+        assert hess["B2"]["B1"].shape == expected_shape, err_str
 
     # Check (B2, B2) Hessian shape
     expected_shape = output_shape + 2 * B2.shape
@@ -80,14 +93,21 @@ def test_batch_model_hessian_dict_double_bilinear(
     # Check (B1, B1) Hessian values
     assert torch.all(hess["B1"]["B1"] == 0.0), err_str
 
-    for batch in range(batch_size):
-        # Check (B1, B2) Hessian values
-        expected_value = K @ torch.kron(torch.eye(n), torch.outer(x1[batch], x2[batch]))
-        assert torch.allclose(hess["B1"]["B2"][batch].view(m * n, n * p), expected_value), err_str
+    # Check (B1, B2) Hessian values
+    if not diagonal_only:
+        for batch in range(batch_size):
+            expected_value = K @ torch.kron(torch.eye(n), torch.outer(x1[batch], x2[batch]))
+            assert torch.allclose(
+                hess["B1"]["B2"][batch].view(m * n, n * p), expected_value
+            ), err_str
 
-        # Check (B2, B1) Hessian values
-        expected_value = torch.kron(torch.eye(n), torch.outer(x2[batch], x1[batch])) @ K.T
-        assert torch.allclose(hess["B2"]["B1"][batch].view(n * p, m * n), expected_value), err_str
+    # Check (B2, B1) Hessian values
+    if not diagonal_only:
+        for batch in range(batch_size):
+            expected_value = torch.kron(torch.eye(n), torch.outer(x2[batch], x1[batch])) @ K.T
+            assert torch.allclose(
+                hess["B2"]["B1"][batch].view(n * p, m * n), expected_value
+            ), err_str
 
     # Check (B2, B2) Hessian values
     assert torch.all(hess["B2"]["B2"] == 0.0), err_str
@@ -129,8 +149,9 @@ def test_batch_model_hessian_dict_double_bilinear_frozen(
     assert torch.all(hess["B2"]["B2"] == 0.0), err_str
 
 
+@pytest.mark.parametrize("diagonal_only", [True, False])
 def test_batch_model_hessian_dict_sum_norms_squared(
-    sum_norms_squared: nn.Module, batch_size: int
+    sum_norms_squared: nn.Module, batch_size: int, diagonal_only: bool
 ) -> None:
     """Test with sum-norms-squared model."""
     # Make aliases for brevity
@@ -142,7 +163,17 @@ def test_batch_model_hessian_dict_sum_norms_squared(
     x = torch.randn(batch_size).requires_grad_(False)
 
     # Compute Hessian
-    hess = batch_model_hessian_dict(sum_norms_squared, x)
+    hess = batch_model_hessian_dict(sum_norms_squared, x, diagonal_only=diagonal_only)
+
+    # Check keys
+    err_str = "Key error"
+    assert list(hess.keys()) == ["A1", "A2"], err_str
+    if not diagonal_only:
+        assert list(hess["A1"].keys()) == ["A1", "A2"], err_str
+        assert list(hess["A2"].keys()) == ["A1", "A2"], err_str
+    else:
+        assert list(hess["A1"].keys()) == ["A1"], err_str
+        assert list(hess["A2"].keys()) == ["A2"], err_str
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
@@ -153,12 +184,14 @@ def test_batch_model_hessian_dict_sum_norms_squared(
     assert hess["A1"]["A1"].shape == expected_shape, err_str
 
     # Check (A1, A2) Hessian shape
-    expected_shape = output_shape + A1.shape + A2.shape
-    assert hess["A1"]["A2"].shape == expected_shape, err_str
+    if not diagonal_only:
+        expected_shape = output_shape + A1.shape + A2.shape
+        assert hess["A1"]["A2"].shape == expected_shape, err_str
 
     # Check (A2, A1) Hessian shape
-    expected_shape = output_shape + A2.shape + A1.shape
-    assert hess["A2"]["A1"].shape == expected_shape, err_str
+    if not diagonal_only:
+        expected_shape = output_shape + A2.shape + A1.shape
+        assert hess["A2"]["A1"].shape == expected_shape, err_str
 
     # Check (A2, A2) Hessian shape
     expected_shape = output_shape + 2 * A2.shape
@@ -168,18 +201,21 @@ def test_batch_model_hessian_dict_sum_norms_squared(
     # - Hessian calculations are in `test_model_hessian.py`
     err_str = "Error in Hessian values"
 
-    # Check (A1, A2) Hessian values
-    assert torch.all(hess["A1"]["A2"] == 0.0), err_str
-
-    # Check (A2, A1) Hessian values
-    assert torch.all(hess["A2"]["A1"] == 0.0), err_str
-
+    # Check (A1, A1) Hessian values
     for batch in range(batch_size):
-        # Check (A1, A1) Hessian values
         expected_value = 2.0 * x[batch] * torch.eye(m * n)
         assert torch.allclose(hess["A1"]["A1"][batch].view(m * n, m * n), expected_value), err_str
 
-        # Check (A2, A2) Hessian values
+    # Check (A1, A2) Hessian values
+    if not diagonal_only:
+        assert torch.all(hess["A1"]["A2"] == 0.0), err_str
+
+    # Check (A2, A1) Hessian values
+    if not diagonal_only:
+        assert torch.all(hess["A2"]["A1"] == 0.0), err_str
+
+    # Check (A2, A2) Hessian values
+    for batch in range(batch_size):
         expected_value = 2.0 * x[batch] * torch.eye(m * n)
         assert torch.allclose(hess["A2"]["A2"][batch].view(m * n, m * n), expected_value), err_str
 
