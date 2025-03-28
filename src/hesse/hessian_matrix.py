@@ -27,8 +27,58 @@ from src.hesse.types import (
 
 
 @jaxtyped(typechecker=typechecker)
+def hessian_matrix_from_hessian_dict(
+    model: nn.Module, hessian_dict: HessianDict, diagonal_only: bool
+) -> Num[Tensor, "n n"]:
+    """
+    Make Hessian matrix from Hessian represented as a dict.
+
+    The ordering of the matrix blocks follows the ordering of the keys in
+    `hessian_dict`.  We do not require a particular block ordering -- so far,
+    we are only interested in its eigenvalues, which are invariant to the
+    block ordering.
+
+    Args:
+        model: Model.
+        hessian_dict: Hessian dict.
+        diagonal_only: Make diagonal data only.
+
+    Returns:
+        Hessian matrix.
+    """
+    # Get model parameters dict
+    params_dict = dict(model.named_parameters())
+
+    # Determine Hessian matrix size
+    hessian_param_names = list(hessian_dict.keys())
+    hessian_size = sum(params_dict[param_name].numel() for param_name in hessian_param_names)
+
+    # Allocate Hessian matrix
+    hessian_matrix = torch.zeros(hessian_size, hessian_size)
+
+    # Populate Hessian matrix
+    row_start = 0
+    for row_param_name in hessian_param_names:
+        row_size = params_dict[row_param_name].numel()
+        row_end = row_start + row_size
+        col_start = 0
+        col_end = 0
+        for col_param_name in hessian_param_names:
+            if not diagonal_only or col_param_name == row_param_name:
+                col_size = params_dict[col_param_name].numel()
+                col_end = col_start + col_size
+                hessian_block = hessian_dict[row_param_name][col_param_name]
+                hessian_block = hessian_block.view(row_size, col_size)
+                hessian_matrix[row_start:row_end, col_start:col_end] = hessian_block
+                col_start = col_end
+        row_start = row_end
+
+    return hessian_matrix
+
+
+@jaxtyped(typechecker=typechecker)
 def batch_hessian_matrix_from_hessian_dict(
-    model: nn.Module, batch_hessian_dict: BatchHessianDict
+    model: nn.Module, batch_hessian_dict: BatchHessianDict, diagonal_only: bool
 ) -> Num[Tensor, "b n n"]:
     """
     Make batch Hessian matrix from batch Hessian represented as a dict.
@@ -41,6 +91,7 @@ def batch_hessian_matrix_from_hessian_dict(
     Args:
         model: Model.
         batch_hessian_dict: Batch Hessian dict.
+        diagonal_only: Make diagonal data only.
 
     Returns:
         Batch Hessian, as a tensor.
@@ -70,67 +121,23 @@ def batch_hessian_matrix_from_hessian_dict(
             col_start = 0
             col_end = 0
             for col_param_name in hessian_param_names:
-                col_size = params_dict[col_param_name].numel()
-                col_end = col_start + col_size
-                hessian_block = batch_hessian_dict[row_param_name][col_param_name][batch, :]
-                hessian_block = hessian_block.view(row_size, col_size)
-                batch_hessian_matrix[batch, row_start:row_end, col_start:col_end] = hessian_block
-                col_start = col_end
+                if not diagonal_only or col_param_name == row_param_name:
+                    col_size = params_dict[col_param_name].numel()
+                    col_end = col_start + col_size
+                    hessian_block = batch_hessian_dict[row_param_name][col_param_name][batch, :]
+                    hessian_block = hessian_block.view(row_size, col_size)
+                    batch_hessian_matrix[batch, row_start:row_end, col_start:col_end] = (
+                        hessian_block
+                    )
+                    col_start = col_end
             row_start = row_end
 
     return batch_hessian_matrix
 
 
 @jaxtyped(typechecker=typechecker)
-def hessian_matrix_from_hessian_dict(
-    model: nn.Module, hessian_dict: HessianDict
-) -> Num[Tensor, "n n"]:
-    """
-    Make Hessian matrix from Hessian represented as a dict.
-
-    The ordering of the matrix blocks follows the ordering of the keys in
-    `hessian_dict`.  We do not require a particular block ordering -- so far,
-    we are only interested in its eigenvalues, which are invariant to the
-    block ordering.
-
-    Args:
-        model: Model.
-        hessian_dict: Hessian dict.
-
-    Returns:
-        Hessian matrix.
-    """
-    # Get model parameters dict
-    params_dict = dict(model.named_parameters())
-
-    # Determine Hessian matrix size
-    hessian_param_names = list(hessian_dict.keys())
-    hessian_size = sum(params_dict[param_name].numel() for param_name in hessian_param_names)
-
-    # Allocate Hessian matrix
-    hessian_matrix = torch.zeros(hessian_size, hessian_size)
-
-    # Populate Hessian matrix
-    row_start = 0
-    for row_param_name in hessian_param_names:
-        row_size = params_dict[row_param_name].numel()
-        row_end = row_start + row_size
-        col_start = 0
-        col_end = 0
-        for col_param_name in hessian_param_names:
-            col_size = params_dict[col_param_name].numel()
-            col_end = col_start + col_size
-            hessian_block = hessian_dict[row_param_name][col_param_name].view(row_size, col_size)
-            hessian_matrix[row_start:row_end, col_start:col_end] = hessian_block
-            col_start = col_end
-        row_start = row_end
-
-    return hessian_matrix
-
-
-@jaxtyped(typechecker=typechecker)
 def model_hessian_matrix(
-    model: nn.Module, inputs: Inputs, params: Params = None
+    model: nn.Module, inputs: Inputs, params: Params = None, diagonal_only: bool = False
 ) -> Num[Tensor, "n n"]:
     """
     Hessian of a model with respect to its parameters.
@@ -140,19 +147,20 @@ def model_hessian_matrix(
     Args:
         model: Network model.
         inputs: Inputs to the model.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Hessian of `model` with respect to its parameters, as a matrix.
     """
-    hessian_dict = model_hessian_dict(model, inputs, params)
-    return hessian_matrix_from_hessian_dict(model, hessian_dict)
+    hessian_dict = model_hessian_dict(model, inputs, params, diagonal_only)
+    return hessian_matrix_from_hessian_dict(model, hessian_dict, diagonal_only)
 
 
 @jaxtyped(typechecker=typechecker)
 def batch_model_hessian_matrix(
-    model: nn.Module, batch_inputs: BatchInputs, params: Params = None
+    model: nn.Module, batch_inputs: BatchInputs, params: Params = None, diagonal_only: bool = False
 ) -> Num[Tensor, "b n n"]:
     """
     Batch Hessian of a model with respect to its parameters.
@@ -160,8 +168,9 @@ def batch_model_hessian_matrix(
     Args:
         model: Network model.
         batch_inputs: Batch model inputs.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Batch Hessian of `model` with respect to its parameters, as a tensor.
@@ -169,8 +178,8 @@ def batch_model_hessian_matrix(
         The output `hess` is such that `hess[b, :]` is the Hessian matrix
         corresponding to batch `b`.
     """
-    batch_hessian_dict = batch_model_hessian_dict(model, batch_inputs, params)
-    return batch_hessian_matrix_from_hessian_dict(model, batch_hessian_dict)
+    batch_hessian_dict = batch_model_hessian_dict(model, batch_inputs, params, diagonal_only)
+    return batch_hessian_matrix_from_hessian_dict(model, batch_hessian_dict, diagonal_only)
 
 
 @jaxtyped(typechecker=typechecker)
@@ -180,6 +189,7 @@ def loss_hessian_matrix(
     inputs: Inputs,
     target: Target,
     params: Params = None,
+    diagonal_only: bool = False,
 ) -> Num[Tensor, "n n"]:
     """
     Hessian of a loss function with respect to model parameters.
@@ -191,8 +201,9 @@ def loss_hessian_matrix(
         criterion: Loss criterion.
         inputs: Model inputs.
         target: Target model output.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Hessian matrix of the loss function
@@ -201,8 +212,8 @@ def loss_hessian_matrix(
 
         with respect to model parameters.
     """
-    hessian_dict = loss_hessian_dict(model, criterion, inputs, target, params)
-    return hessian_matrix_from_hessian_dict(model, hessian_dict)
+    hessian_dict = loss_hessian_dict(model, criterion, inputs, target, params, diagonal_only)
+    return hessian_matrix_from_hessian_dict(model, hessian_dict, diagonal_only)
 
 
 @jaxtyped(typechecker=typechecker)
@@ -212,6 +223,7 @@ def batch_loss_hessian_matrix(
     batch_inputs: BatchInputs,
     batch_target: BatchTarget,
     params: Params = None,
+    diagonal_only: bool = False,
 ) -> Num[Tensor, "b n n"]:
     """
     Batch Hessian of a loss function with respect to model parameters.
@@ -221,8 +233,9 @@ def batch_loss_hessian_matrix(
         criterion: Loss criterion.
         batch_inputs: Batch model inputs.
         batch_target: Batch target model output.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Batch Hessian of the loss function
@@ -235,6 +248,6 @@ def batch_loss_hessian_matrix(
         corresponding to batch `b`.
     """
     batch_hessian_dict = batch_loss_hessian_dict(
-        model, criterion, batch_inputs, batch_target, params
+        model, criterion, batch_inputs, batch_target, params, diagonal_only
     )
-    return batch_hessian_matrix_from_hessian_dict(model, batch_hessian_dict)
+    return batch_hessian_matrix_from_hessian_dict(model, batch_hessian_dict, diagonal_only)

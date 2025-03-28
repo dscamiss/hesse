@@ -4,6 +4,7 @@
 
 from typing import Callable
 
+import pytest
 import torch
 from torch import nn
 
@@ -25,7 +26,8 @@ def test_commutation_matrix(commutation_matrix: Callable) -> None:
 
 
 @torch.no_grad()
-def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module) -> None:
+@pytest.mark.parametrize("diagonal_only", [True, False])
+def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_only: bool) -> None:
     """Test `hessian_matrix_from_hessian_dict()` with double-bilinear model."""
     # Make aliases for brevity
     B1 = double_bilinear.B1
@@ -37,19 +39,35 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module) -> None:
     x2 = torch.randn(p).requires_grad_(False)
     inputs = (x1, x2)
 
-    # Compute Hessian
-    hessian_dict = model_hessian_dict(double_bilinear, inputs)
+    # Compute Hessian dict
+    hessian_dict = model_hessian_dict(double_bilinear, inputs, diagonal_only=diagonal_only)
 
     # Make Hessian matrix
-    hessian_matrix = hessian_matrix_from_hessian_dict(double_bilinear, hessian_dict)
+    hessian_matrix = hessian_matrix_from_hessian_dict(
+        double_bilinear, hessian_dict, diagonal_only=diagonal_only
+    )
 
-    # Check matrix entries
+    # Check Hessian matrix shape
+    err_str = "Error in Hessian matrix shape"
+    expected_shape = 2 * torch.Size([(m * n) + (n * p)])
+    assert hessian_matrix.shape == expected_shape, err_str
+
+    # Check Hessian matrix entries
     err_str = "Error in Hessian matrix values"
+
+    # Compute Hessian matrix blocks
     A = hessian_dict["B1"]["B1"].view(m * n, m * n)
-    B = hessian_dict["B1"]["B2"].view(m * n, n * p)
-    C = hessian_dict["B2"]["B1"].view(n * p, m * n)
+    if not diagonal_only:
+        B = hessian_dict["B1"]["B2"].view(m * n, n * p)
+        C = hessian_dict["B2"]["B1"].view(n * p, m * n)
+    else:
+        B = torch.zeros(m * n, n * p)
+        C = torch.zeros(n * p, m * n)
     D = hessian_dict["B2"]["B2"].view(n * p, n * p)
+
+    # Assemble expected Hessian matrix from blocks
     row_0 = torch.cat((A, B), dim=1)
     row_1 = torch.cat((C, D), dim=1)
     expected_hessian_matrix = torch.cat((row_0, row_1), dim=0)
+
     assert torch.all(hessian_matrix == expected_hessian_matrix), err_str
