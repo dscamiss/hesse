@@ -3,7 +3,7 @@ requires = ["setuptools >= 62.6"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "manic"
+name = "hesse"
 version = "0.0.1"
 description = "PyTorch tools for Hessian-related operations"
 dynamic = ["dependencies"]
