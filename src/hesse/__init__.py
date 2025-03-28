@@ -1,6 +1,7 @@
 """Main module."""
 
 import importlib.metadata
+import os
 
 from src.hesse.hessian_dict import (
     batch_loss_hessian_dict,
@@ -36,4 +37,6 @@ __all__ = [
     "model_sharpness",
 ]
 
-__version__ = importlib.metadata.version("hesse")
+# The call to `importlib.metadata.version()` fails in GitHub CI
+if os.getenv("GITHUB_ACTIONS") == "true":
+    __version__ = importlib.metadata.version("hesse")
