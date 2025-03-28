@@ -114,6 +114,7 @@ def model_hessian_dict(
         raise ValueError("No Hessian parameters selected")
 
     if diagonal_only:
+        # Handle `diagonal_only` case with multiple calls to `hessian()`
         hess: HessianDict = defaultdict(dict)
         for param_name, param in hessian_params.items():
             hess_single = hessian(functional_forward)({param_name: param})
@@ -172,6 +173,7 @@ def loss_hessian_dict(
     inputs: Inputs,
     target: Target,
     params: Params = None,
+    diagonal_only: bool = False,
 ) -> HessianDict:
     """
     Hessian of a loss function with respect to model parameters.
@@ -183,8 +185,9 @@ def loss_hessian_dict(
         criterion: Loss criterion.
         inputs: Model inputs.
         target: Target model output.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Hessian of the loss function
@@ -222,7 +225,15 @@ def loss_hessian_dict(
     if not hessian_params:
         raise ValueError("No Hessian parameters selected")
 
-    return hessian(functional_loss)(hessian_params)
+    if diagonal_only:
+        # Handle `diagonal_only` case with multiple calls to `hessian()`
+        hess: HessianDict = defaultdict(dict)
+        for param_name, param in hessian_params.items():
+            hess_single = hessian(functional_loss)({param_name: param})
+            hess[param_name][param_name] = hess_single[param_name][param_name]
+    else:
+        hess = hessian(functional_loss)(hessian_params)
+    return hess
 
 
 @jaxtyped(typechecker=typechecker)
@@ -232,6 +243,7 @@ def batch_loss_hessian_dict(
     batch_inputs: BatchInputs,
     batch_target: BatchTarget,
     params: Params = None,
+    diagonal_only: bool = False,
 ) -> HessianDict:
     """
     Batch Hessian of a loss function with respect to model parameters.
@@ -241,8 +253,9 @@ def batch_loss_hessian_dict(
         criterion: Loss criterion.
         batch_inputs: Batch model inputs.
         batch_target: Batch target model output.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Batch Hessian of the loss function
@@ -271,6 +284,6 @@ def batch_loss_hessian_dict(
         Returns:
             Hessian result for the specified model inputs and target.
         """
-        return loss_hessian_dict(model, criterion, inputs, target, params)
+        return loss_hessian_dict(model, criterion, inputs, target, params, diagonal_only)
 
     return vmap(loss_hessian_dict_wrapper)(batch_inputs, batch_target)

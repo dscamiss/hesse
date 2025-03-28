@@ -11,6 +11,8 @@ from torch import nn
 from src.hesse import batch_loss_hessian_dict
 from src.hesse.types import Criterion
 
+# TODO: Add test cases to exercise `diagonal_only` argument
+
 
 def test_batch_loss_hessian_dict_bilinear(
     bilinear: nn.Module, commutation_matrix: Callable, mse: Criterion, batch_size: int
