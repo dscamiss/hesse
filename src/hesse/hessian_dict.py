@@ -29,6 +29,8 @@ where vec() is the row-major vectorization map.
 # Next line disables "returns Any" errors caused by unhinted PyTorch functions
 # mypy: disable-error-code="no-any-return"
 
+from collections import defaultdict
+
 from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn, vmap
 from torch.func import functional_call, hessian
@@ -49,7 +51,7 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
 
     Args:
         model: Network model.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
 
     Returns:
@@ -64,7 +66,9 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
 
 
 @jaxtyped(typechecker=typechecker)
-def model_hessian_dict(model: nn.Module, inputs: Inputs, params: Params = None) -> HessianDict:
+def model_hessian_dict(
+    model: nn.Module, inputs: Inputs, params: Params = None, diagonal_only: bool = False
+) -> HessianDict:
     """
     Hessian of a model with respect to its parameters.
 
@@ -73,8 +77,9 @@ def model_hessian_dict(model: nn.Module, inputs: Inputs, params: Params = None) 
     Args:
         model: Network model.
         inputs: Inputs to the model.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
+        diagonal_only: Make diagonal data only.  Default value is `False`.
 
     Returns:
         Hessian of `model` with respect to its parameters, represented as a
@@ -108,7 +113,14 @@ def model_hessian_dict(model: nn.Module, inputs: Inputs, params: Params = None) 
     if not hessian_params:
         raise ValueError("No Hessian parameters selected")
 
-    return hessian(functional_forward)(hessian_params)
+    if diagonal_only:
+        hess: HessianDict = defaultdict(dict)
+        for param_name, param in hessian_params.items():
+            hess_single = hessian(functional_forward)({param_name: param})
+            hess[param_name][param_name] = hess_single[param_name][param_name]
+    else:
+        hess = hessian(functional_forward)(hessian_params)
+    return hess
 
 
 @jaxtyped(typechecker=typechecker)
