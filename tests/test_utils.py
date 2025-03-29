@@ -40,7 +40,11 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_o
     inputs = (x1, x2)
 
     # Compute Hessian dict
-    hessian_dict = model_hessian_dict(double_bilinear, inputs, diagonal_only=diagonal_only)
+    hessian_dict = model_hessian_dict(
+        model=double_bilinear,
+        inputs=inputs,
+        diagonal_only=diagonal_only,
+    )
 
     # Make Hessian matrix
     hessian_matrix = hessian_matrix_from_hessian_dict(

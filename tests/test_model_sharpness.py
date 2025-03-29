@@ -19,7 +19,7 @@ def test_model_sharpness_bilinear(bilinear: nn.Module) -> None:
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        sharpness = model_sharpness(bilinear, inputs)
+        sharpness = model_sharpness(model=bilinear, inputs=inputs)
 
     assert sharpness == 0.0, "Error in sharpness value"
 
@@ -37,6 +37,6 @@ def test_model_sharpness_double_bilinear(double_bilinear: nn.Module) -> None:
     inputs = (x1, x2)
 
     # Compute sharpness
-    model_sharpness(double_bilinear, inputs)
+    model_sharpness(model=double_bilinear, inputs=inputs)
 
     # TODO

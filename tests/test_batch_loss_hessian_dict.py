@@ -28,7 +28,12 @@ def test_batch_loss_hessian_dict_bilinear(
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = batch_loss_hessian_dict(bilinear, mse, batch_inputs, batch_target)
+        hess = batch_loss_hessian_dict(
+            model=bilinear,
+            criterion=mse,
+            batch_inputs=batch_inputs,
+            batch_target=batch_target,
+        )
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"

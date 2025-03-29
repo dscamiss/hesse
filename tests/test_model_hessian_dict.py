@@ -21,7 +21,7 @@ def test_model_hessian_dict_bilinear(bilinear: nn.Module) -> None:
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = model_hessian_dict(bilinear, inputs)
+        hess = model_hessian_dict(model=bilinear, inputs=inputs)
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"
@@ -49,7 +49,11 @@ def test_model_hessian_dict_double_bilinear(
     inputs = (x1, x2)
 
     # Compute Hessian
-    hess = model_hessian_dict(double_bilinear, inputs, diagonal_only=diagonal_only)
+    hess = model_hessian_dict(
+        model=double_bilinear,
+        inputs=inputs,
+        diagonal_only=diagonal_only,
+    )
 
     # Check keys
     err_str = "Key error"
@@ -150,7 +154,7 @@ def test_model_hessian_dict_double_bilinear_frozen(double_bilinear_frozen: nn.Mo
     inputs = (x1, x2)
 
     # Compute Hessian
-    hess = model_hessian_dict(double_bilinear_frozen, inputs)
+    hess = model_hessian_dict(model=double_bilinear_frozen, inputs=inputs)
 
     # Check keys
     err_str = "Key error"
@@ -182,10 +186,14 @@ def test_model_hessian_dict_sum_norms_squared(
     m, n = A1.shape[0], A1.shape[1]
 
     # Make input data
-    x = torch.randn([]).requires_grad_(False)
+    inputs = torch.randn([]).requires_grad_(False)
 
     # Compute Hessian
-    hess = model_hessian_dict(sum_norms_squared, x, diagonal_only=diagonal_only)
+    hess = model_hessian_dict(
+        model=sum_norms_squared,
+        inputs=inputs,
+        diagonal_only=diagonal_only,
+    )
 
     # Check keys
     err_str = "Key error"
@@ -252,7 +260,7 @@ def test_model_hessian_dict_sum_norms_squared(
     err_str = "Error in Hessian values"
 
     # Check (A1, A1) Hessian values
-    expected_value = 2.0 * x * torch.eye(m * n)
+    expected_value = 2.0 * inputs * torch.eye(m * n)
     assert torch.allclose(hess["A1"]["A1"].view(m * n, m * n), expected_value), err_str
 
     # Check (A1, A2) Hessian values
@@ -264,7 +272,7 @@ def test_model_hessian_dict_sum_norms_squared(
         assert torch.all(hess["A2"]["A1"] == 0.0), err_str
 
     # Check (A2, A2) Hessian values
-    expected_value = 2.0 * x * torch.eye(m * n)
+    expected_value = 2.0 * inputs * torch.eye(m * n)
     assert torch.allclose(hess["A2"]["A2"].view(m * n, m * n), expected_value), err_str
 
 
@@ -278,10 +286,10 @@ def test_model_hessian_dict_sum_norms_squared_frozen(
     m, n = A1.shape[0], A1.shape[1]
 
     # Make input data
-    x = torch.randn([]).requires_grad_(False)
+    inputs = torch.randn([]).requires_grad_(False)
 
     # Compute Hessian
-    hess = model_hessian_dict(sum_norms_squared_frozen, x)
+    hess = model_hessian_dict(model=sum_norms_squared_frozen, inputs=inputs)
 
     # Check keys
     err_str = "Key error"
@@ -299,5 +307,5 @@ def test_model_hessian_dict_sum_norms_squared_frozen(
     err_str = "Error in Hessian values"
 
     # Check (A2, A2) Hessian values
-    expected_value = 2.0 * x * torch.eye(m * n)
+    expected_value = 2.0 * inputs * torch.eye(m * n)
     assert torch.allclose(hess["A2"]["A2"].view(m * n, m * n), expected_value), err_str
