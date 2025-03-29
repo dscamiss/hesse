@@ -75,14 +75,14 @@ def model_sharpness(model: nn.Module, inputs: Inputs, params: Params = None) -> 
     Args:
         model: Network model.
         inputs: Inputs to the model.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
 
     Returns:
         Sharpness of `model` with respect to its parameters.
     """
     # Make Hessian matrix
-    hessian_matrix = model_hessian_matrix(model, inputs, params)
+    hessian_matrix = model_hessian_matrix(model=model, inputs=inputs, params=params)
 
     # Return its sharpness
     return sharpness(hessian_matrix)
@@ -97,7 +97,7 @@ def batch_model_sharpness(
     Args:
         model: Network model.
         batch_inputs: Batch model inputs.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
 
     Returns:
@@ -112,7 +112,11 @@ def batch_model_sharpness(
     batch_inputs = make_tuple(batch_inputs)
 
     # Make batch Hessian matrix
-    batch_hessian_matrix = batch_model_hessian_matrix(model, batch_inputs, params)
+    batch_hessian_matrix = batch_model_hessian_matrix(
+        model=model,
+        batch_inputs=batch_inputs,
+        params=params,
+    )
 
     # Allocate batch sharpness
     batch_size = batch_inputs[0].shape[0]
@@ -142,7 +146,7 @@ def loss_sharpness(
         criterion: Loss criterion.
         inputs: Model inputs.
         target: Target model output.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
 
     Returns:
@@ -153,7 +157,13 @@ def loss_sharpness(
         with respect to model parameters.
     """
     # Make Hessian matrix
-    hessian_matrix = loss_hessian_matrix(model, criterion, inputs, target, params)
+    hessian_matrix = loss_hessian_matrix(
+        model=model,
+        criterion=criterion,
+        inputs=inputs,
+        target=target,
+        params=params,
+    )
 
     # Return its sharpness
     return sharpness(hessian_matrix)
@@ -174,7 +184,7 @@ def batch_loss_sharpness(
         criterion: Loss criterion.
         batch_inputs: Batch model inputs.
         batch_target: Batch target model output.
-        params: Specific model parameters to use.  The default value is `None`
+        params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
 
     Returns:
@@ -194,7 +204,11 @@ def batch_loss_sharpness(
 
     # Make batch Hessian matrix
     batch_hessian_matrix = batch_loss_hessian_matrix(
-        model, criterion, batch_inputs, batch_target, params
+        model=model,
+        criterion=criterion,
+        batch_inputs=batch_inputs,
+        batch_target=batch_target,
+        params=params,
     )
 
     # Allocate batch sharpness

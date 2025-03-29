@@ -161,7 +161,12 @@ def batch_model_hessian_dict(
         Returns:
             Hessian result for the specified model inputs.
         """
-        return model_hessian_dict(model, inputs, params, diagonal_only)
+        return model_hessian_dict(
+            model=model,
+            inputs=inputs,
+            params=params,
+            diagonal_only=diagonal_only,
+        )
 
     return vmap(model_hessian_dict_wrapper)(batch_inputs)
 
@@ -284,6 +289,13 @@ def batch_loss_hessian_dict(
         Returns:
             Hessian result for the specified model inputs and target.
         """
-        return loss_hessian_dict(model, criterion, inputs, target, params, diagonal_only)
+        return loss_hessian_dict(
+            model=model,
+            criterion=criterion,
+            inputs=inputs,
+            target=target,
+            params=params,
+            diagonal_only=diagonal_only,
+        )
 
     return vmap(loss_hessian_dict_wrapper)(batch_inputs, batch_target)

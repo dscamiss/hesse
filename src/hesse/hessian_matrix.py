@@ -154,7 +154,13 @@ def model_hessian_matrix(
     Returns:
         Hessian of `model` with respect to its parameters, as a matrix.
     """
-    hessian_dict = model_hessian_dict(model, inputs, params, diagonal_only)
+    hessian_dict = model_hessian_dict(
+        model=model,
+        inputs=inputs,
+        params=params,
+        diagonal_only=diagonal_only,
+    )
+
     return hessian_matrix_from_hessian_dict(model, hessian_dict, diagonal_only)
 
 
@@ -178,7 +184,13 @@ def batch_model_hessian_matrix(
         The output `hess` is such that `hess[b, :]` is the Hessian matrix
         corresponding to batch `b`.
     """
-    batch_hessian_dict = batch_model_hessian_dict(model, batch_inputs, params, diagonal_only)
+    batch_hessian_dict = batch_model_hessian_dict(
+        model=model,
+        batch_inputs=batch_inputs,
+        params=params,
+        diagonal_only=diagonal_only,
+    )
+
     return batch_hessian_matrix_from_hessian_dict(model, batch_hessian_dict, diagonal_only)
 
 
@@ -212,7 +224,14 @@ def loss_hessian_matrix(
 
         with respect to model parameters.
     """
-    hessian_dict = loss_hessian_dict(model, criterion, inputs, target, params, diagonal_only)
+    hessian_dict = loss_hessian_dict(
+        model=model,
+        criterion=criterion,
+        inputs=inputs,
+        target=target,
+        params=params,
+        diagonal_only=diagonal_only,
+    )
     return hessian_matrix_from_hessian_dict(model, hessian_dict, diagonal_only)
 
 
@@ -248,6 +267,11 @@ def batch_loss_hessian_matrix(
         corresponding to batch `b`.
     """
     batch_hessian_dict = batch_loss_hessian_dict(
-        model, criterion, batch_inputs, batch_target, params, diagonal_only
+        model=model,
+        criterion=criterion,
+        batch_inputs=batch_inputs,
+        batch_target=batch_target,
+        params=params,
+        diagonal_only=diagonal_only,
     )
     return batch_hessian_matrix_from_hessian_dict(model, batch_hessian_dict, diagonal_only)
