@@ -35,6 +35,11 @@ def test_loss_hessian_bilinear(
             target=target,
         )
 
+    # Check keys
+    err_str = "Key error"
+    assert list(hess.keys()) == ["B.weight"], err_str
+    assert list(hess["B.weight"].keys()) == ["B.weight"], err_str
+
     # Check Hessian shape
     err_str = "Error in Hessian shape"
     expected_shape = 2 * bilinear.B.weight.shape
