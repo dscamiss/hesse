@@ -18,7 +18,8 @@ def test_model_hessian_dict_bilinear(bilinear: nn.Module) -> None:
     x2 = torch.randn(bilinear.B.in2_features).requires_grad_(False)
     inputs = (x1, x2)
 
-    # PyTorch issues performance warning for unimplemented batching rule
+    # Compute Hessian dict
+    # - PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
         hessian_dict = model_hessian_dict(model=bilinear, inputs=inputs)

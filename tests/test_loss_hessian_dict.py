@@ -25,7 +25,8 @@ def test_loss_hessian_bilinear(
     inputs = (x1, x2)
     target = torch.randn([]).requires_grad_(False)
 
-    # PyTorch issues performance warning for unimplemented batching rule
+    # Compute Hessian dict
+    # - PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
         hessian_dict = loss_hessian_dict(

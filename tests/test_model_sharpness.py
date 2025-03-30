@@ -16,7 +16,8 @@ def test_model_sharpness_bilinear(bilinear: nn.Module) -> None:
     x2 = torch.randn(bilinear.B.in2_features).requires_grad_(False)
     inputs = (x1, x2)
 
-    # PyTorch issues performance warning for unimplemented batching rule
+    # Compute sharpness
+    # - PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
         sharpness = model_sharpness(model=bilinear, inputs=inputs)
