@@ -28,7 +28,7 @@ def test_batch_loss_hessian_dict_bilinear(
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = batch_loss_hessian_dict(
+        hessian_dict = batch_loss_hessian_dict(
             model=bilinear,
             criterion=mse,
             batch_inputs=batch_inputs,
@@ -37,13 +37,13 @@ def test_batch_loss_hessian_dict_bilinear(
 
     # Check keys
     err_str = "Key error"
-    assert list(hess.keys()) == ["B.weight"], err_str
-    assert list(hess["B.weight"].keys()) == ["B.weight"], err_str
+    assert list(hessian_dict.keys()) == ["B.weight"], err_str
+    assert list(hessian_dict["B.weight"].keys()) == ["B.weight"], err_str
 
-    # Check Hessian shape
-    err_str = "Error in Hessian shape"
+    # Check Hessian shapes
+    err_str = "Error in Hessian shapes"
     expected_shape = torch.Size([batch_size]) + 2 * bilinear.B.weight.shape
-    assert hess["B.weight"]["B.weight"].shape == expected_shape, err_str
+    assert hessian_dict["B.weight"]["B.weight"].shape == expected_shape, err_str
 
     # Check Hessian values
     err_str = "Error in Hessian values"
@@ -52,6 +52,6 @@ def test_batch_loss_hessian_dict_bilinear(
     for batch in range(batch_size):
         flat_1 = torch.outer(x1[batch, :], x2[batch, :]).flatten()
         flat_2 = torch.outer(x2[batch, :], x1[batch, :]).flatten()
+        actual_value = hessian_dict["B.weight"]["B.weight"][batch].view(m * n, m * n)
         expected_value = 2.0 * (flat_1.unsqueeze(-1) @ flat_2.unsqueeze(-1).T @ K.T)
-        actual_value = hess["B.weight"]["B.weight"][batch].view(m * n, m * n)
         assert torch.allclose(actual_value, expected_value), err_str

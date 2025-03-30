@@ -21,21 +21,21 @@ def test_model_hessian_dict_bilinear(bilinear: nn.Module) -> None:
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = model_hessian_dict(model=bilinear, inputs=inputs)
+        hessian_dict = model_hessian_dict(model=bilinear, inputs=inputs)
 
     # Check keys
     err_str = "Key error"
-    assert list(hess.keys()) == ["B.weight"], err_str
-    assert list(hess["B.weight"].keys()) == ["B.weight"], err_str
+    assert list(hessian_dict.keys()) == ["B.weight"], err_str
+    assert list(hessian_dict["B.weight"].keys()) == ["B.weight"], err_str
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"
     expected_shape = 2 * bilinear.B.weight.shape
-    assert hess["B.weight"]["B.weight"][0].shape == expected_shape, err_str
+    assert hessian_dict["B.weight"]["B.weight"][0].shape == expected_shape, err_str
 
     # Check Hessian values
     err_str = "Error in Hessian values"
-    assert torch.all(hess["B.weight"]["B.weight"][0] == 0.0), err_str
+    assert torch.all(hessian_dict["B.weight"]["B.weight"][0] == 0.0), err_str
 
 
 @pytest.mark.parametrize("diagonal_only", [True, False])
@@ -53,8 +53,8 @@ def test_model_hessian_dict_double_bilinear(
     x2 = torch.randn(p).requires_grad_(False)
     inputs = (x1, x2)
 
-    # Compute Hessian
-    hess = model_hessian_dict(
+    # Compute Hessian dict
+    hessian_dict = model_hessian_dict(
         model=double_bilinear,
         inputs=inputs,
         diagonal_only=diagonal_only,
@@ -62,34 +62,34 @@ def test_model_hessian_dict_double_bilinear(
 
     # Check keys
     err_str = "Key error"
-    assert list(hess.keys()) == ["B1", "B2"], err_str
+    assert list(hessian_dict.keys()) == ["B1", "B2"], err_str
     if not diagonal_only:
-        assert list(hess["B1"].keys()) == ["B1", "B2"], err_str
-        assert list(hess["B2"].keys()) == ["B1", "B2"], err_str
+        assert list(hessian_dict["B1"].keys()) == ["B1", "B2"], err_str
+        assert list(hessian_dict["B2"].keys()) == ["B1", "B2"], err_str
     else:
-        assert list(hess["B1"].keys()) == ["B1"], err_str
-        assert list(hess["B2"].keys()) == ["B2"], err_str
+        assert list(hessian_dict["B1"].keys()) == ["B1"], err_str
+        assert list(hessian_dict["B2"].keys()) == ["B2"], err_str
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
 
     # Check (B1, B1) Hessian shape
     expected_shape = 2 * B1.shape
-    assert hess["B1"]["B1"].shape == expected_shape, err_str
+    assert hessian_dict["B1"]["B1"].shape == expected_shape, err_str
 
     # Check (B1, B2) Hessian shape
     if not diagonal_only:
         expected_shape = B1.shape + B2.shape
-        assert hess["B1"]["B2"].shape == expected_shape, err_str
+        assert hessian_dict["B1"]["B2"].shape == expected_shape, err_str
 
     # Check (B2, B1) Hessian shape
     if not diagonal_only:
         expected_shape = B2.shape + B1.shape
-        assert hess["B2"]["B1"].shape == expected_shape, err_str
+        assert hessian_dict["B2"]["B1"].shape == expected_shape, err_str
 
     # Check (B2, B2) Hessian shape
     expected_shape = 2 * B2.shape
-    assert hess["B2"]["B2"].shape == expected_shape, err_str
+    assert hessian_dict["B2"]["B2"].shape == expected_shape, err_str
 
     # Check Hessian values
     # - Note that
@@ -130,20 +130,22 @@ def test_model_hessian_dict_double_bilinear(
     K = commutation_matrix(m, n).requires_grad_(False)
 
     # Check (B1, B1) Hessian values
-    assert torch.all(hess["B1"]["B1"] == 0.0), err_str
+    assert torch.all(hessian_dict["B1"]["B1"] == 0.0), err_str
 
     # Check (B1, B2) Hessian values
     if not diagonal_only:
+        actual_value = hessian_dict["B1"]["B2"].view(m * n, n * p)
         expected_value = K @ torch.kron(torch.eye(n), torch.outer(x1, x2))
-        assert torch.allclose(hess["B1"]["B2"].view(m * n, n * p), expected_value), err_str
+        assert torch.allclose(actual_value, expected_value), err_str
 
     # Check (B2, B1) Hessian values
     if not diagonal_only:
+        actual_value = hessian_dict["B2"]["B1"].view(n * p, m * n)
         expected_value = torch.kron(torch.eye(n), torch.outer(x2, x1)) @ K.T
-        assert torch.allclose(hess["B2"]["B1"].view(n * p, m * n), expected_value), err_str
+        assert torch.allclose(actual_value, expected_value), err_str
 
     # Check (B2, B2) Hessian values
-    assert torch.all(hess["B2"]["B2"] == 0.0), err_str
+    assert torch.all(hessian_dict["B2"]["B2"] == 0.0), err_str
 
 
 def test_model_hessian_dict_double_bilinear_frozen(double_bilinear_frozen: nn.Module) -> None:
@@ -158,26 +160,26 @@ def test_model_hessian_dict_double_bilinear_frozen(double_bilinear_frozen: nn.Mo
     x2 = torch.randn(p).requires_grad_(False)
     inputs = (x1, x2)
 
-    # Compute Hessian
-    hess = model_hessian_dict(model=double_bilinear_frozen, inputs=inputs)
+    # Compute Hessian dict
+    hessian_dict = model_hessian_dict(model=double_bilinear_frozen, inputs=inputs)
 
     # Check keys
     err_str = "Key error"
-    assert list(hess.keys()) == ["B2"], err_str
-    assert list(hess["B2"].keys()) == ["B2"], err_str
+    assert list(hessian_dict.keys()) == ["B2"], err_str
+    assert list(hessian_dict["B2"].keys()) == ["B2"], err_str
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
 
     # Check (B2, B2) Hessian shape
     expected_shape = 2 * B2.shape
-    assert hess["B2"]["B2"].shape == expected_shape, err_str
+    assert hessian_dict["B2"]["B2"].shape == expected_shape, err_str
 
     # Check Hessian values
     err_str = "Error in Hessian values"
 
     # Check (B2, B2) Hessian values
-    assert torch.all(hess["B2"]["B2"] == 0.0), err_str
+    assert torch.all(hessian_dict["B2"]["B2"] == 0.0), err_str
 
 
 @pytest.mark.parametrize("diagonal_only", [True, False])
@@ -193,8 +195,8 @@ def test_model_hessian_dict_sum_norms_squared(
     # Make input data
     inputs = torch.randn([]).requires_grad_(False)
 
-    # Compute Hessian
-    hess = model_hessian_dict(
+    # Compute Hessian dict
+    hessian_dict = model_hessian_dict(
         model=sum_norms_squared,
         inputs=inputs,
         diagonal_only=diagonal_only,
@@ -202,34 +204,34 @@ def test_model_hessian_dict_sum_norms_squared(
 
     # Check keys
     err_str = "Key error"
-    assert list(hess.keys()) == ["A1", "A2"], err_str
+    assert list(hessian_dict.keys()) == ["A1", "A2"], err_str
     if not diagonal_only:
-        assert list(hess["A1"].keys()) == ["A1", "A2"], err_str
-        assert list(hess["A2"].keys()) == ["A1", "A2"], err_str
+        assert list(hessian_dict["A1"].keys()) == ["A1", "A2"], err_str
+        assert list(hessian_dict["A2"].keys()) == ["A1", "A2"], err_str
     else:
-        assert list(hess["A1"].keys()) == ["A1"], err_str
-        assert list(hess["A2"].keys()) == ["A2"], err_str
+        assert list(hessian_dict["A1"].keys()) == ["A1"], err_str
+        assert list(hessian_dict["A2"].keys()) == ["A2"], err_str
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
 
     # Check (A1, A1) Hessian shape
     expected_shape = 2 * A1.shape
-    assert hess["A1"]["A1"].shape == expected_shape, err_str
+    assert hessian_dict["A1"]["A1"].shape == expected_shape, err_str
 
     # Check (A1, A2) Hessian shape
     if not diagonal_only:
         expected_shape = A1.shape + A2.shape
-        assert hess["A1"]["A2"].shape == expected_shape, err_str
+        assert hessian_dict["A1"]["A2"].shape == expected_shape, err_str
 
     # Check (A2, A1) Hessian shape
     if not diagonal_only:
         expected_shape = A2.shape + A1.shape
-        assert hess["A2"]["A1"].shape == expected_shape, err_str
+        assert hessian_dict["A2"]["A1"].shape == expected_shape, err_str
 
     # Check (A2, A2) Hessian shape
     expected_shape = 2 * A2.shape
-    assert hess["A2"]["A2"].shape == expected_shape, err_str
+    assert hessian_dict["A2"]["A2"].shape == expected_shape, err_str
 
     # Check Hessian values
     # - Note that
@@ -265,20 +267,22 @@ def test_model_hessian_dict_sum_norms_squared(
     err_str = "Error in Hessian values"
 
     # Check (A1, A1) Hessian values
+    actual_value = hessian_dict["A1"]["A1"].view(m * n, m * n)
     expected_value = 2.0 * inputs * torch.eye(m * n)
-    assert torch.allclose(hess["A1"]["A1"].view(m * n, m * n), expected_value), err_str
+    assert torch.allclose(actual_value, expected_value), err_str
 
     # Check (A1, A2) Hessian values
     if not diagonal_only:
-        assert torch.all(hess["A1"]["A2"] == 0.0), err_str
+        assert torch.all(hessian_dict["A1"]["A2"] == 0.0), err_str
 
     # Check (A2, A1) Hessian values
     if not diagonal_only:
-        assert torch.all(hess["A2"]["A1"] == 0.0), err_str
+        assert torch.all(hessian_dict["A2"]["A1"] == 0.0), err_str
 
     # Check (A2, A2) Hessian values
+    actual_value = hessian_dict["A2"]["A2"].view(m * n, m * n)
     expected_value = 2.0 * inputs * torch.eye(m * n)
-    assert torch.allclose(hess["A2"]["A2"].view(m * n, m * n), expected_value), err_str
+    assert torch.allclose(actual_value, expected_value), err_str
 
 
 def test_model_hessian_dict_sum_norms_squared_frozen(
@@ -293,24 +297,25 @@ def test_model_hessian_dict_sum_norms_squared_frozen(
     # Make input data
     inputs = torch.randn([]).requires_grad_(False)
 
-    # Compute Hessian
-    hess = model_hessian_dict(model=sum_norms_squared_frozen, inputs=inputs)
+    # Compute Hessian dict
+    hessian_dict = model_hessian_dict(model=sum_norms_squared_frozen, inputs=inputs)
 
     # Check keys
     err_str = "Key error"
-    assert list(hess.keys()) == ["A2"], err_str
-    assert list(hess["A2"].keys()) == ["A2"], err_str
+    assert list(hessian_dict.keys()) == ["A2"], err_str
+    assert list(hessian_dict["A2"].keys()) == ["A2"], err_str
 
     # Check Hessian shapes
     err_str = "Error in Hessian shape"
 
     # Check (A2, A2) Hessian shape
     expected_shape = 2 * A2.shape
-    assert hess["A2"]["A2"].shape == expected_shape, err_str
+    assert hessian_dict["A2"]["A2"].shape == expected_shape, err_str
 
     # Check Hessian values
     err_str = "Error in Hessian values"
 
     # Check (A2, A2) Hessian values
+    actual_value = hessian_dict["A2"]["A2"].view(m * n, m * n)
     expected_value = 2.0 * inputs * torch.eye(m * n)
-    assert torch.allclose(hess["A2"]["A2"].view(m * n, m * n), expected_value), err_str
+    assert torch.allclose(actual_value, expected_value), err_str

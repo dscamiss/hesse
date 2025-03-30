@@ -28,7 +28,7 @@ def test_loss_hessian_bilinear(
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = loss_hessian_dict(
+        hessian_dict = loss_hessian_dict(
             model=bilinear,
             criterion=mse,
             inputs=inputs,
@@ -37,13 +37,13 @@ def test_loss_hessian_bilinear(
 
     # Check keys
     err_str = "Key error"
-    assert list(hess.keys()) == ["B.weight"], err_str
-    assert list(hess["B.weight"].keys()) == ["B.weight"], err_str
+    assert list(hessian_dict.keys()) == ["B.weight"], err_str
+    assert list(hessian_dict["B.weight"].keys()) == ["B.weight"], err_str
 
     # Check Hessian shape
     err_str = "Error in Hessian shape"
     expected_shape = 2 * bilinear.B.weight.shape
-    assert hess["B.weight"]["B.weight"].shape == expected_shape, err_str
+    assert hessian_dict["B.weight"]["B.weight"].shape == expected_shape, err_str
 
     # Check Hessian values
     # - Note that
@@ -71,5 +71,6 @@ def test_loss_hessian_bilinear(
 
     flat_1 = torch.outer(x1, x2).flatten()
     flat_2 = torch.outer(x2, x1).flatten()
+    actual_value = hessian_dict["B.weight"]["B.weight"].view(m * n, m * n)
     expected_value = 2.0 * (flat_1.unsqueeze(-1) @ flat_2.unsqueeze(-1).T @ K.T)
-    assert torch.allclose(hess["B.weight"]["B.weight"].view(m * n, m * n), expected_value), err_str
+    assert torch.allclose(actual_value, expected_value), err_str

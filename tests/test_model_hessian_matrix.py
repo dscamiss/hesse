@@ -21,16 +21,16 @@ def test_model_hessian_matrix_bilinear(bilinear: nn.Module) -> None:
     # PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hess = model_hessian_matrix(model=bilinear, inputs=inputs)
+        hessian_matrix = model_hessian_matrix(model=bilinear, inputs=inputs)
 
     # Check Hessian matrix shape
     err_str = "Error in Hessian matrix shape"
     expected_shape = 2 * torch.Size([bilinear.B.weight.numel()])
-    assert hess.shape == expected_shape, err_str
+    assert hessian_matrix.shape == expected_shape, err_str
 
     # Check Hessian matrix values
     err_str = "Error in Hessian matrix values"
-    assert torch.all(hess == 0.0), err_str
+    assert torch.all(hessian_matrix == 0.0), err_str
 
 
 @pytest.mark.parametrize("diagonal_only", [True, False])
