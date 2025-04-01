@@ -26,6 +26,7 @@ from src.hesse.types import (
 )
 
 
+# TODO: Can we use sparse storage for `diagonal_only` case?
 @jaxtyped(typechecker=typechecker)
 def hessian_matrix_from_hessian_dict(
     model: nn.Module, hessian_dict: HessianDict, diagonal_only: bool
@@ -56,26 +57,43 @@ def hessian_matrix_from_hessian_dict(
     # Allocate Hessian matrix
     hessian_matrix = torch.zeros(hessian_size, hessian_size)
 
-    # Populate Hessian matrix
-    row_start = 0
+    # Populate Hessian matrix -- diagonal blocks
+    offset = 0
+    for param_name in hessian_param_names:
+        param_size = params_dict[param_name].numel()
+        hessian_block = hessian_dict[param_name][param_name][:]
+        hessian_block = hessian_block.view(param_size, param_size)
+        index_slice = slice(offset, offset + param_size)
+        hessian_matrix[index_slice, index_slice] = hessian_block
+        offset += param_size
+
+    # If `diagonal_only` is `True`, there's no more work to do
+    if diagonal_only:
+        return hessian_matrix
+
+    # Populate Hessian matrix -- off-diagonal blocks
+    row_offset = 0
     for row_param_name in hessian_param_names:
-        row_size = params_dict[row_param_name].numel()
-        row_end = row_start + row_size
-        col_start = 0
-        col_end = 0
+        row_param_size = params_dict[row_param_name].numel()
+        col_offset = 0
         for col_param_name in hessian_param_names:
-            if not diagonal_only or col_param_name == row_param_name:
-                col_size = params_dict[col_param_name].numel()
-                col_end = col_start + col_size
-                hessian_block = hessian_dict[row_param_name][col_param_name]
-                hessian_block = hessian_block.view(row_size, col_size)
-                hessian_matrix[row_start:row_end, col_start:col_end] = hessian_block
-                col_start = col_end
-        row_start = row_end
+            col_param_size = params_dict[col_param_name].numel()
+            # Skip diagonal blocks
+            if row_param_name == col_param_name:
+                col_offset += col_param_size
+                continue
+            hessian_block = hessian_dict[row_param_name][col_param_name]
+            hessian_block = hessian_block.view(row_param_size, col_param_size)
+            row_slice = slice(row_offset, row_offset + row_param_size)
+            col_slice = slice(col_offset, col_offset + col_param_size)
+            hessian_matrix[row_slice, col_slice] = hessian_block
+            col_offset += col_param_size
+        row_offset += row_param_size
 
     return hessian_matrix
 
 
+# TODO: Can we refactor to use `vmap` here?
 @jaxtyped(typechecker=typechecker)
 def batch_hessian_matrix_from_hessian_dict(
     model: nn.Module, batch_hessian_dict: BatchHessianDict, diagonal_only: bool
@@ -104,33 +122,49 @@ def batch_hessian_matrix_from_hessian_dict(
 
     # Determine batch size
     hessian_param_names = list(batch_hessian_dict.keys())
-    batch_size = params_dict[hessian_param_names[0]].shape[0]
+    param_name = hessian_param_names[0]
+    batch_size = batch_hessian_dict[param_name][param_name].shape[0]
 
     # Determine Hessian matrix size
-    hessian_size = sum(params_dict[param_name][0, :].numel() for param_name in hessian_param_names)
+    hessian_size = sum(params_dict[param_name].numel() for param_name in hessian_param_names)
 
     # Allocate batch Hessian matrix
     batch_hessian_matrix = torch.zeros(batch_size, hessian_size, hessian_size)
 
-    # Populate batch Hessian matrix
-    row_start = 0
+    # Populate batch Hessian matrix -- diagonal blocks
     for batch in range(batch_size):
+        offset = 0
+        for param_name in hessian_param_names:
+            param_size = params_dict[param_name].numel()
+            hessian_block = batch_hessian_dict[param_name][param_name][batch, :]
+            hessian_block = hessian_block.view(param_size, param_size)
+            index_slice = slice(offset, offset + param_size)
+            batch_hessian_matrix[batch, index_slice, index_slice] = hessian_block
+            offset += param_size
+
+    # If `diagonal_only` is `True`, there's no more work to do
+    if diagonal_only:
+        return batch_hessian_matrix
+
+    # Populate batch Hessian matrix -- off-diagonal blocks
+    for batch in range(batch_size):
+        row_offset = 0
         for row_param_name in hessian_param_names:
-            row_size = params_dict[row_param_name].numel()
-            row_end = row_start + row_size
-            col_start = 0
-            col_end = 0
+            row_param_size = params_dict[row_param_name].numel()
+            col_offset = 0
             for col_param_name in hessian_param_names:
-                if not diagonal_only or col_param_name == row_param_name:
-                    col_size = params_dict[col_param_name].numel()
-                    col_end = col_start + col_size
-                    hessian_block = batch_hessian_dict[row_param_name][col_param_name][batch, :]
-                    hessian_block = hessian_block.view(row_size, col_size)
-                    batch_hessian_matrix[batch, row_start:row_end, col_start:col_end] = (
-                        hessian_block
-                    )
-                    col_start = col_end
-            row_start = row_end
+                col_param_size = params_dict[col_param_name].numel()
+                # Skip diagonal blocks
+                if row_param_name == col_param_name:
+                    col_offset += col_param_size
+                    continue
+                hessian_block = batch_hessian_dict[row_param_name][col_param_name][batch, :]
+                hessian_block = hessian_block.view(row_param_size, col_param_size)
+                row_slice = slice(row_offset, row_offset + row_param_size)
+                col_slice = slice(col_offset, col_offset + col_param_size)
+                batch_hessian_matrix[batch, row_slice, col_slice] = hessian_block
+                col_offset += col_param_size
+            row_offset += row_param_size
 
     return batch_hessian_matrix
 
@@ -274,4 +308,5 @@ def batch_loss_hessian_matrix(
         params=params,
         diagonal_only=diagonal_only,
     )
+
     return batch_hessian_matrix_from_hessian_dict(model, batch_hessian_dict, diagonal_only)

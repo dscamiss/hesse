@@ -8,8 +8,11 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import model_hessian_dict
-from src.hesse.hessian_matrix import hessian_matrix_from_hessian_dict
+from src.hesse import batch_model_hessian_dict, model_hessian_dict
+from src.hesse.hessian_matrix import (
+    batch_hessian_matrix_from_hessian_dict,
+    hessian_matrix_from_hessian_dict,
+)
 
 
 @torch.no_grad()
@@ -48,7 +51,9 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_o
 
     # Make Hessian matrix
     hessian_matrix = hessian_matrix_from_hessian_dict(
-        double_bilinear, hessian_dict, diagonal_only=diagonal_only
+        model=double_bilinear,
+        hessian_dict=hessian_dict,
+        diagonal_only=diagonal_only,
     )
 
     # Check Hessian matrix shape
@@ -56,7 +61,7 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_o
     expected_shape = 2 * torch.Size([(m * n) + (n * p)])
     assert hessian_matrix.shape == expected_shape, err_str
 
-    # Check Hessian matrix entries
+    # Check Hessian matrix values
     err_str = "Error in Hessian matrix values"
 
     # Compute Hessian matrix blocks
@@ -75,3 +80,60 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_o
     expected_hessian_matrix = torch.cat((row_0, row_1), dim=0)
 
     assert torch.all(hessian_matrix == expected_hessian_matrix), err_str
+
+
+@torch.no_grad()
+@pytest.mark.parametrize("diagonal_only", [True, False])
+def test_batch_hessian_matrix_from_hessian_dict(
+    double_bilinear: nn.Module, diagonal_only: bool, batch_size: int
+) -> None:
+    """Test `batch_hessian_matrix_from_hessian_dict()` with double-bilinear model."""
+    # Make aliases for brevity
+    B1 = double_bilinear.B1
+    B2 = double_bilinear.B2
+    m, n, p = B1.shape[0], B1.shape[1], B2.shape[1]
+
+    # Make input data
+    x1 = torch.randn(batch_size, m).requires_grad_(False)
+    x2 = torch.randn(batch_size, p).requires_grad_(False)
+    batch_inputs = (x1, x2)
+
+    # Compute batch Hessian dict
+    batch_hessian_dict = batch_model_hessian_dict(
+        model=double_bilinear,
+        batch_inputs=batch_inputs,
+        diagonal_only=diagonal_only,
+    )
+
+    # Make batch Hessian matrix
+    hessian_matrix = batch_hessian_matrix_from_hessian_dict(
+        model=double_bilinear,
+        batch_hessian_dict=batch_hessian_dict,
+        diagonal_only=diagonal_only,
+    )
+
+    # Check Hessian matrix shape
+    err_str = "Error in Hessian matrix shape"
+    expected_shape = torch.Size([batch_size]) + 2 * torch.Size([(m * n) + (n * p)])
+    assert hessian_matrix.shape == expected_shape, err_str
+
+    # Check Hessian matrix values
+    err_str = "Error in Hessian matrix values"
+
+    for batch in range(batch_size):
+        # Compute Hessian matrix blocks
+        A = batch_hessian_dict["B1"]["B1"][batch, :].view(m * n, m * n)
+        if not diagonal_only:
+            B = batch_hessian_dict["B1"]["B2"][batch, :].view(m * n, n * p)
+            C = batch_hessian_dict["B2"]["B1"][batch, :].view(n * p, m * n)
+        else:
+            B = torch.zeros(m * n, n * p)
+            C = torch.zeros(n * p, m * n)
+        D = batch_hessian_dict["B2"]["B2"][batch, :].view(n * p, n * p)
+
+        # Assemble expected Hessian matrix from blocks
+        row_0 = torch.cat((A, B), dim=1)
+        row_1 = torch.cat((C, D), dim=1)
+        expected_hessian_matrix = torch.cat((row_0, row_1), dim=0)
+
+        assert torch.all(hessian_matrix[batch, :] == expected_hessian_matrix), err_str
