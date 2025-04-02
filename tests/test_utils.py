@@ -36,11 +36,13 @@ def test_select_hessian_params() -> None:
     assert list(param_dict.keys()) == ["bias"], "Key error"
     assert torch.all(param_dict["bias"] == model_param_dict["bias"]), "Value error"
 
-    # Select no parameters
-    param_dict = select_hessian_params(model, [])
+    # Select nonexistent parameters
+    with pytest.raises(ValueError):
+        select_hessian_params(model, ["bad_1", "bad_2"])
 
-    # Check keys
-    assert not param_dict, "Key error"
+    # Select no parameters
+    with pytest.raises(ValueError):
+        select_hessian_params(model, [])
 
 
 @torch.no_grad()

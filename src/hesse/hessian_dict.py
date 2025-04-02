@@ -56,12 +56,19 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
 
     Returns:
         Dict containing Hessian parameters.
+
+    Raises:
+        ValueError: If no Hessian parameters are selected.
     """
     hessian_params = {}
     for name, param in model.named_parameters():
         if param.requires_grad:
             if params is None or name in params:
                 hessian_params[name] = param
+
+    if not hessian_params:
+        raise ValueError("No Hessian parameters selected")
+
     return hessian_params
 
 
@@ -87,9 +94,6 @@ def model_hessian_dict(
 
         The output `hess` is such that `hess["A"]["B"]` represents the Hessian
         matrix block corresponding to named parameters `A` and `B`.
-
-    Raises:
-        ValueError: If any arguments are invalid.
     """
     # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
@@ -110,8 +114,6 @@ def model_hessian_dict(
         return functional_call(model, _params, inputs)
 
     hessian_params = select_hessian_params(model, params)
-    if not hessian_params:
-        raise ValueError("No Hessian parameters selected")
 
     if diagonal_only:
         # Handle `diagonal_only` case with multiple calls to `hessian()`
@@ -203,9 +205,6 @@ def loss_hessian_dict(
 
         The output `hess` is such that `hess["A"]["B"]` represents the Hessian
         matrix block corresponding to named parameters `A` and `B`.
-
-    Raises:
-        ValueError: If any arguments are invalid.
     """
     # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
@@ -227,8 +226,6 @@ def loss_hessian_dict(
         return criterion(output, target)
 
     hessian_params = select_hessian_params(model, params)
-    if not hessian_params:
-        raise ValueError("No Hessian parameters selected")
 
     if diagonal_only:
         # Handle `diagonal_only` case with multiple calls to `hessian()`
