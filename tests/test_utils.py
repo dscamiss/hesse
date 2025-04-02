@@ -9,10 +9,38 @@ import torch
 from torch import nn
 
 from src.hesse import batch_model_hessian_dict, model_hessian_dict
+from src.hesse.hessian_dict import select_hessian_params
 from src.hesse.hessian_matrix import (
     batch_hessian_matrix_from_hessian_dict,
     hessian_matrix_from_hessian_dict,
 )
+
+
+def test_select_hessian_params() -> None:
+    """Test `select_hessian_params()`."""
+    model = nn.Linear(2, 3)
+    model_param_dict = dict(model.named_parameters())
+
+    # Select both parameters
+    param_dict = select_hessian_params(model)
+
+    # Check keys and values
+    assert sorted(list(param_dict.keys())) == ["bias", "weight"], "Key error"
+    assert torch.all(param_dict["bias"] == model_param_dict["bias"]), "Value error"
+    assert torch.all(param_dict["weight"] == model_param_dict["weight"]), "Value error"
+
+    # Select single parameter
+    param_dict = select_hessian_params(model, ["bias"])
+
+    # Check keys and values
+    assert list(param_dict.keys()) == ["bias"], "Key error"
+    assert torch.all(param_dict["bias"] == model_param_dict["bias"]), "Value error"
+
+    # Select no parameters
+    param_dict = select_hessian_params(model, [])
+
+    # Check keys
+    assert not param_dict, "Key error"
 
 
 @torch.no_grad()
