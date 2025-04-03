@@ -50,3 +50,10 @@ pip install -e hesse
 # Usage
 
 TODO
+
+# TODO
+
+[ ] Add diagonal-only sharpness computation 
+[ ] Use sparse storage?
+[ ] Test with multi-output model
+[ ] Test batch functions with batch data
