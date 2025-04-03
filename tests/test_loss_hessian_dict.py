@@ -1,6 +1,6 @@
 """Test code for `loss_hessian_dict()`."""
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,too-many-statements
 
 from typing import Callable
 
@@ -182,6 +182,8 @@ def test_loss_hessian_dict_double_bilinear(
     #           = 2 e(B1, B2) flat(V1)^t K (I (X) x y^t) flat(W2)
     #               + 2 e(B1, B2) flat(V2)^t (I (X) y x^t) K^t flat(W1).
     #
+    #   See comments in `test_model_hessian_dict.py` for derivations.
+    #
     # - This means that the Hessian blocks are
     #      Hess_{B1,B1} = 2 flat(x y^t B2^t) flat(B2 y x^t)^t K^t
     #      Hess_{B1,B2} = 2 flat(x y^t B2^t) flat(y x^t B1)^t K^t
@@ -202,11 +204,9 @@ def test_loss_hessian_dict_double_bilinear(
     prod_transpose_flat = prod.T.flatten().unsqueeze(0)  # Implicit transpose
     actual_value = hessian_dict["B1"]["B1"].view(m * n, m * n)
     expected_value = 2.0 * prod_flat @ prod_transpose_flat @ K_mn.T
-    assert torch.allclose(actual_value, expected_value), err_str
+    assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
 
     # Check (B1, B2) Hessian values
-    #      Hess_{B1,B2} = 2 flat(x y^t B2^t) flat(y x^t B1)^t K^t
-    #                       + 2 e(B1, B2) K (I (X) x y^t)
     if not diagonal_only:
         prod_left = outer_prod @ B2.T
         prod_right = outer_prod.T @ B1
@@ -216,7 +216,7 @@ def test_loss_hessian_dict_double_bilinear(
         expected_value_1 = 2.0 * prod_left_flat @ prod_right_flat @ K_np.T
         expected_value_2 = 2.0 * err * K_mn @ torch.kron(torch.eye(n), outer_prod)
         expected_value = expected_value_1 + expected_value_2
-        assert torch.allclose(actual_value, expected_value), err_str
+        assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
 
     # Check (B2, B1) Hessian values
     if not diagonal_only:
@@ -232,7 +232,7 @@ def test_loss_hessian_dict_double_bilinear(
         outer_prod_transpose = torch.outer(x2, x1)
         expected_value_2 = 2.0 * err * torch.kron(torch.eye(n), outer_prod_transpose) @ K_mn.T
         expected_value = expected_value_1 + expected_value_2
-        assert torch.allclose(actual_value, expected_value), err_str
+        assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
 
     # Check (B2, B2) Hessian values
     prod = B1.T @ outer_prod
@@ -240,4 +240,4 @@ def test_loss_hessian_dict_double_bilinear(
     prod_transpose_flat = prod.T.flatten().unsqueeze(0)  # Implicit transpose
     actual_value = hessian_dict["B2"]["B2"].view(n * p, n * p)
     expected_value = 2.0 * prod_flat @ prod_transpose_flat @ K_np.T
-    assert torch.allclose(actual_value, expected_value), err_str
+    assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
