@@ -55,6 +55,6 @@ TODO
 
 - [ ] Add remaining test cases
 - [ ] Add diagonal-only sharpness computation 
-- [ ] Use sparse storage?
+- [ ] Sparse storage where appropriate
 - [ ] Test with multi-output model
 - [ ] Test batch functions with batch data
