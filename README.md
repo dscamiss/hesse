@@ -53,7 +53,8 @@ TODO
 
 # TODO
 
-[ ] Add diagonal-only sharpness computation 
-[ ] Use sparse storage?
-[ ] Test with multi-output model
-[ ] Test batch functions with batch data
+- [ ] Add remaining test cases
+- [ ] Add diagonal-only sharpness computation 
+- [ ] Use sparse storage?
+- [ ] Test with multi-output model
+- [ ] Test batch functions with batch data
