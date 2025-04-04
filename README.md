@@ -59,5 +59,4 @@ TODO
 - [ ] Test with multi-output model
 - [ ] Test batch functions with batch data
 - [ ] Remove redundancy in test code
-- [ ] Add examples
-- [ ] Add automatic batch handling instead of having separate functions 
+- [ ] Add a few examples
