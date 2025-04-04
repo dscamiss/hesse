@@ -60,3 +60,4 @@ TODO
 - [ ] Test batch functions with batch data
 - [ ] Remove redundancy in test code
 - [ ] Add examples
+- [ ] Add automatic batch handling instead of having separate functions 
