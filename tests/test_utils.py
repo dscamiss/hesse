@@ -127,14 +127,14 @@ def test_batch_hessian_matrix_from_hessian_dict(
     x2 = torch.randn(batch_size, p).requires_grad_(False)
     batch_inputs = (x1, x2)
 
-    # Compute batch Hessian dict
+    # Compute Hessian dict
     batch_hessian_dict = batch_model_hessian_dict(
         model=double_bilinear,
         batch_inputs=batch_inputs,
         diagonal_only=diagonal_only,
     )
 
-    # Make batch Hessian matrix
+    # Make Hessian matrix
     hessian_matrix = batch_hessian_matrix_from_hessian_dict(
         model=double_bilinear,
         batch_hessian_dict=batch_hessian_dict,

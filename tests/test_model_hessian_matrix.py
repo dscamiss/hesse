@@ -65,22 +65,27 @@ def test_model_hessian_dict_double_bilinear(
     err_str = "Error in Hessian matrix values"
     K = commutation_matrix(m, n)
 
+    hess_B1_B1 = hessian_matrix[: (m * n), : (m * n)]
+    hess_B1_B2 = hessian_matrix[: (m * n), (m * n) :]
+    hess_B2_B1 = hessian_matrix[(m * n) :, : (m * n)]
+    hess_B2_B2 = hessian_matrix[(m * n) :, (m * n) :]
+
     # Check (B1, B1) Hessian matrix values
-    assert torch.all(hessian_matrix[: (m * n), : (m * n)] == 0.0), err_str
+    assert torch.all(hess_B1_B1 == 0.0), err_str
 
     # Check (B1, B2) Hessian matrix values
+    expected_value = 0.0
     if not diagonal_only:
-        expected_value = K @ torch.kron(torch.eye(n), torch.outer(x1, x2))
-    else:
-        expected_value = 0.0
-    assert torch.all(hessian_matrix[: (m * n), (m * n) :] == expected_value), err_str
+        outer_prod = torch.outer(x1, x2)
+        expected_value = K @ torch.kron(torch.eye(n), outer_prod)
+    assert torch.all(hess_B1_B2 == expected_value), err_str
 
     # Check (B2, B1) Hessian matrix values
+    expected_value = 0.0
     if not diagonal_only:
-        expected_value = torch.kron(torch.eye(n), torch.outer(x2, x1)) @ K.T
-    else:
-        expected_value = 0.0
-    assert torch.all(hessian_matrix[(m * n) :, : (m * n)] == expected_value), err_str
+        outer_prod = torch.outer(x2, x1)
+        expected_value = torch.kron(torch.eye(n), outer_prod) @ K.T
+    assert torch.all(hess_B2_B1 == expected_value), err_str
 
     # Check (B2, B2) Hessian matrix values
-    assert torch.all(hessian_matrix[(m * n) :, (m * n) :] == 0.0), err_str
+    assert torch.all(hess_B2_B2 == 0.0), err_str
