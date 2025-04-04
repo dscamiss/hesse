@@ -2,20 +2,19 @@
 
 # pylint: disable=invalid-name
 
-from typing import Callable
-
 import pytest
 import torch
 from torch import nn
 
 from src.hesse import model_hessian_matrix
+from tests.conftest import commutation_matrix, randint
 
 
 def test_model_hessian_matrix_bilinear(bilinear: nn.Module) -> None:
     """Test with bilinear model."""
     # Make input data
-    x1 = torch.randn(bilinear.B.in1_features).requires_grad_(False)
-    x2 = torch.randn(bilinear.B.in2_features).requires_grad_(False)
+    x1 = randint((bilinear.B.in1_features,))
+    x2 = randint((bilinear.B.in2_features,))
     inputs = (x1, x2)
 
     # Compute Hessian matrix
@@ -36,7 +35,7 @@ def test_model_hessian_matrix_bilinear(bilinear: nn.Module) -> None:
 
 @pytest.mark.parametrize("diagonal_only", [True, False])
 def test_model_hessian_dict_double_bilinear(
-    double_bilinear: nn.Module, commutation_matrix: Callable, diagonal_only: bool
+    double_bilinear: nn.Module, diagonal_only: bool
 ) -> None:
     """Test with double-bilinear model."""
     # Make aliases for brevity
@@ -45,8 +44,8 @@ def test_model_hessian_dict_double_bilinear(
     m, n, p = B1.shape[0], B1.shape[1], B2.shape[1]
 
     # Make input data
-    x1 = torch.randn(m).requires_grad_(False)
-    x2 = torch.randn(p).requires_grad_(False)
+    x1 = randint((m,))
+    x2 = randint((p,))
     inputs = (x1, x2)
 
     # Compute Hessian matrix
@@ -64,7 +63,7 @@ def test_model_hessian_dict_double_bilinear(
     # Check Hessian matrix values
     # - See comments in `test_model_hessian_dict.py` for derivations
     err_str = "Error in Hessian matrix values"
-    K = commutation_matrix(m, n).requires_grad_(False)
+    K = commutation_matrix(m, n)
 
     # Check (B1, B1) Hessian matrix values
     assert torch.all(hessian_matrix[: (m * n), : (m * n)] == 0.0), err_str

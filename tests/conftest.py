@@ -5,8 +5,6 @@
 
 # pylint: disable=invalid-name
 
-from typing import Callable
-
 import pytest
 import torch
 from jaxtyping import Float, jaxtyped
@@ -15,38 +13,51 @@ from typeguard import typechecked as typechecker
 
 from src.hesse.types import Criterion
 
+_RANDINT_LO = -10
+_RANDINT_HI = 10
 
-@pytest.fixture(name="commutation_matrix")
-def fixture_commutation_matrix() -> Callable[[int, int], Float[Tensor, "mn mn"]]:
-    """Return a function that makes commutation matrices."""
 
-    @torch.no_grad()
-    @jaxtyped(typechecker=typechecker)
-    def commutation_matrix(m: int, n: int) -> Float[Tensor, "mn mn"]:
-        """
-        Construct the commutation matrix K_{m,n}.
+@torch.no_grad()
+@jaxtyped(typechecker=typechecker)
+def randint(shape: tuple[int, ...] = ()) -> Float[Tensor, "..."]:
+    """
+    Return tensor with random integer values and floating-point data type.
 
-        For an m-by-n input matrix A, K_{m,n} is an mn-by-mn matrix that satisfies
+    Args:
+        shape: Tensor shape.
 
-            K_{m,n} vec(A) = vec(A^t),
+    Returns:
+        Tensor with random integer values between `_RANDINT_LO` and
+        `_RANDINT_HI`, inclusive.
+    """
+    return torch.randint(_RANDINT_LO, _RANDINT_HI, shape).float()
 
-        where vec() is the column-stacking vectorization map.
 
-        Being a permutation matrix, K_{m,n} is orthogonal and therefore
+@torch.no_grad()
+@jaxtyped(typechecker=typechecker)
+def commutation_matrix(m: int, n: int) -> Float[Tensor, "mn mn"]:
+    """
+    Construct the commutation matrix K_{m,n}.
 
-            vec(A) = K_{m,n}^t vec(A^t).
+    For an m-by-n input matrix A, K_{m,n} is an mn-by-mn matrix that satisfies
 
-        Args:
-            m: "Row dimension" argument.
-            n: "Column dimension" argument.
+        K_{m,n} vec(A) = vec(A^t),
 
-        Returns:
-            Tensor containing K_{m,n}.
-        """
-        indices = torch.arange(m * n).reshape(m, n).T.reshape(-1)
-        return torch.eye(m * n).index_select(0, indices).T
+    where vec() is the column-stacking vectorization map.
 
-    return commutation_matrix
+    Being a permutation matrix, K_{m,n} is orthogonal and therefore
+
+        vec(A) = K_{m,n}^t vec(A^t).
+
+    Args:
+        m: "Row dimension" argument.
+        n: "Column dimension" argument.
+
+    Returns:
+        Tensor containing K_{m,n}.
+    """
+    indices = torch.arange(m * n).reshape(m, n).T.reshape(-1)
+    return torch.eye(m * n).index_select(0, indices).T
 
 
 class Bilinear(nn.Module):
@@ -92,8 +103,8 @@ class DoubleBilinear(nn.Module):
 
     def __init__(self, input_dim_1: int, inner_dim: int, input_dim_2: int) -> None:
         super().__init__()
-        self.B1 = nn.Parameter(torch.randn(input_dim_1, inner_dim))
-        self.B2 = nn.Parameter(torch.randn(inner_dim, input_dim_2))
+        self.B1 = nn.Parameter(randint((input_dim_1, inner_dim)))
+        self.B2 = nn.Parameter(randint((inner_dim, input_dim_2)))
 
     def forward(self, x1: Tensor, x2: Tensor) -> Tensor:
         """
@@ -122,8 +133,8 @@ class SumNormsSquared(nn.Module):
 
     def __init__(self, num_rows: int, num_cols: int) -> None:
         super().__init__()
-        self.A1 = nn.Parameter(torch.randn(num_rows, num_cols))
-        self.A2 = nn.Parameter(torch.randn(num_rows, num_cols))
+        self.A1 = nn.Parameter(randint((num_rows, num_cols)))
+        self.A2 = nn.Parameter(randint((num_rows, num_cols)))
 
     def forward(self, x: Tensor) -> Tensor:
         """

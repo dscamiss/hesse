@@ -2,8 +2,6 @@
 
 # pylint: disable=invalid-name
 
-from typing import Callable
-
 import pytest
 import torch
 from torch import nn
@@ -14,6 +12,7 @@ from src.hesse.hessian_matrix import (
     batch_hessian_matrix_from_hessian_dict,
     hessian_matrix_from_hessian_dict,
 )
+from tests.conftest import commutation_matrix
 
 
 def test_select_hessian_params() -> None:
@@ -46,7 +45,7 @@ def test_select_hessian_params() -> None:
 
 
 @torch.no_grad()
-def test_commutation_matrix(commutation_matrix: Callable) -> None:
+def test_commutation_matrix() -> None:
     """Test `commutation_matrix()`."""
     A = torch.randn(3, 4)
     K = commutation_matrix(A.shape[0], A.shape[1])

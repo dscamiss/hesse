@@ -2,20 +2,19 @@
 
 # pylint: disable=invalid-name
 
-from typing import Callable
-
 import pytest
 import torch
 from torch import nn
 
 from src.hesse import model_hessian_dict
+from tests.conftest import commutation_matrix, randint
 
 
 def test_model_hessian_dict_bilinear(bilinear: nn.Module) -> None:
     """Test with bilinear model."""
     # Make input data
-    x1 = torch.randn(bilinear.B.in1_features).requires_grad_(False)
-    x2 = torch.randn(bilinear.B.in2_features).requires_grad_(False)
+    x1 = randint((bilinear.B.in1_features,))
+    x2 = randint((bilinear.B.in2_features,))
     inputs = (x1, x2)
 
     # Compute Hessian dict
@@ -41,7 +40,7 @@ def test_model_hessian_dict_bilinear(bilinear: nn.Module) -> None:
 
 @pytest.mark.parametrize("diagonal_only", [True, False])
 def test_model_hessian_dict_double_bilinear(
-    double_bilinear: nn.Module, commutation_matrix: Callable, diagonal_only: bool
+    double_bilinear: nn.Module, diagonal_only: bool
 ) -> None:
     """Test with double-bilinear model."""
     # Make aliases for brevity
@@ -50,8 +49,8 @@ def test_model_hessian_dict_double_bilinear(
     m, n, p = B1.shape[0], B1.shape[1], B2.shape[1]
 
     # Make input data
-    x1 = torch.randn(m).requires_grad_(False)
-    x2 = torch.randn(p).requires_grad_(False)
+    x1 = randint((m,))
+    x2 = randint((p,))
     inputs = (x1, x2)
 
     # Compute Hessian dict
@@ -128,7 +127,7 @@ def test_model_hessian_dict_double_bilinear(
     #      Hess_{B2,B2} = <zeros>.
 
     err_str = "Error in Hessian values"
-    K = commutation_matrix(m, n).requires_grad_(False)
+    K = commutation_matrix(m, n)
 
     # Check (B1, B1) Hessian values
     assert torch.all(hessian_dict["B1"]["B1"] == 0.0), err_str
@@ -137,13 +136,13 @@ def test_model_hessian_dict_double_bilinear(
     if not diagonal_only:
         actual_value = hessian_dict["B1"]["B2"].view(m * n, n * p)
         expected_value = K @ torch.kron(torch.eye(n), torch.outer(x1, x2))
-        assert torch.allclose(actual_value, expected_value), err_str
+        assert actual_value.equal(expected_value), err_str
 
     # Check (B2, B1) Hessian values
     if not diagonal_only:
         actual_value = hessian_dict["B2"]["B1"].view(n * p, m * n)
         expected_value = torch.kron(torch.eye(n), torch.outer(x2, x1)) @ K.T
-        assert torch.allclose(actual_value, expected_value), err_str
+        assert actual_value.equal(expected_value), err_str
 
     # Check (B2, B2) Hessian values
     assert torch.all(hessian_dict["B2"]["B2"] == 0.0), err_str
@@ -157,8 +156,8 @@ def test_model_hessian_dict_double_bilinear_frozen(double_bilinear_frozen: nn.Mo
     m, p = B1.shape[0], B2.shape[1]
 
     # Make input data
-    x1 = torch.randn(m).requires_grad_(False)
-    x2 = torch.randn(p).requires_grad_(False)
+    x1 = randint((m,))
+    x2 = randint((p,))
     inputs = (x1, x2)
 
     # Compute Hessian dict
@@ -194,7 +193,7 @@ def test_model_hessian_dict_sum_norms_squared(
     m, n = A1.shape[0], A1.shape[1]
 
     # Make input data
-    inputs = torch.randn([]).requires_grad_(False)
+    inputs = randint()
 
     # Compute Hessian dict
     hessian_dict = model_hessian_dict(
@@ -270,7 +269,7 @@ def test_model_hessian_dict_sum_norms_squared(
     # Check (A1, A1) Hessian values
     actual_value = hessian_dict["A1"]["A1"].view(m * n, m * n)
     expected_value = 2.0 * inputs * torch.eye(m * n)
-    assert torch.allclose(actual_value, expected_value), err_str
+    assert actual_value.equal(expected_value), err_str
 
     # Check (A1, A2) Hessian values
     if not diagonal_only:
@@ -283,7 +282,7 @@ def test_model_hessian_dict_sum_norms_squared(
     # Check (A2, A2) Hessian values
     actual_value = hessian_dict["A2"]["A2"].view(m * n, m * n)
     expected_value = 2.0 * inputs * torch.eye(m * n)
-    assert torch.allclose(actual_value, expected_value), err_str
+    assert actual_value.equal(expected_value), err_str
 
 
 def test_model_hessian_dict_sum_norms_squared_frozen(
@@ -296,7 +295,7 @@ def test_model_hessian_dict_sum_norms_squared_frozen(
     m, n = A1.shape[0], A1.shape[1]
 
     # Make input data
-    inputs = torch.randn([]).requires_grad_(False)
+    inputs = randint()
 
     # Compute Hessian dict
     hessian_dict = model_hessian_dict(model=sum_norms_squared_frozen, inputs=inputs)
@@ -319,4 +318,4 @@ def test_model_hessian_dict_sum_norms_squared_frozen(
     # Check (A2, A2) Hessian values
     actual_value = hessian_dict["A2"]["A2"].view(m * n, m * n)
     expected_value = 2.0 * inputs * torch.eye(m * n)
-    assert torch.allclose(actual_value, expected_value), err_str
+    assert actual_value.equal(expected_value), err_str

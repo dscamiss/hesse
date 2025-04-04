@@ -2,26 +2,23 @@
 
 # pylint: disable=invalid-name,too-many-statements
 
-from typing import Callable
-
 import pytest
 import torch
 from torch import nn
 
 from src.hesse import loss_hessian_dict
 from src.hesse.types import Criterion
+from tests.conftest import commutation_matrix, randint
 
 
-def test_loss_hessian_dict_bilinear(
-    bilinear: nn.Module, commutation_matrix: Callable, mse: Criterion
-) -> None:
+def test_loss_hessian_dict_bilinear(bilinear: nn.Module, mse: Criterion) -> None:
     """Test with bilinear model."""
     # Make input data
     m, n = bilinear.B.in1_features, bilinear.B.in2_features
-    x1 = torch.randn(m).requires_grad_(False)
-    x2 = torch.randn(n).requires_grad_(False)
+    x1 = randint((m,))
+    x2 = randint((n,))
     inputs = (x1, x2)
-    target = torch.randn([]).requires_grad_(False)
+    target = randint()
 
     # Compute Hessian dict
     # - PyTorch issues performance warning for unimplemented batching rule
@@ -66,18 +63,18 @@ def test_loss_hessian_dict_bilinear(
     #      Hess = 2 flat(x y^t) flat(y x^t)^t K^t.
 
     err_str = "Error in Hessian values"
-    K = commutation_matrix(m, n).requires_grad_(False)
+    K = commutation_matrix(m, n)
 
     flat_1 = torch.outer(x1, x2).flatten()
     flat_2 = torch.outer(x2, x1).flatten()
     actual_value = hessian_dict["B.weight"]["B.weight"].view(m * n, m * n)
     expected_value = 2.0 * (flat_1.unsqueeze(-1) @ flat_2.unsqueeze(-1).T @ K.T)
-    assert torch.allclose(actual_value, expected_value), err_str
+    assert actual_value.equal(expected_value), err_str
 
 
 @pytest.mark.parametrize("diagonal_only", [True, False])
 def test_loss_hessian_dict_double_bilinear(
-    double_bilinear: nn.Module, commutation_matrix: Callable, mse: Criterion, diagonal_only: bool
+    double_bilinear: nn.Module, mse: Criterion, diagonal_only: bool
 ) -> None:
     """Test with double-bilinear model."""
     # Make aliases for brevity
@@ -86,10 +83,10 @@ def test_loss_hessian_dict_double_bilinear(
     m, n, p = B1.shape[0], B1.shape[1], B2.shape[1]
 
     # Make input data
-    x1 = torch.randn(m).requires_grad_(False)
-    x2 = torch.randn(p).requires_grad_(False)
+    x1 = randint((m,))
+    x2 = randint((p,))
     inputs = (x1, x2)
-    target = torch.randn([]).requires_grad_(False)
+    target = randint()
 
     # Compute Hessian dict
     hessian_dict = loss_hessian_dict(
@@ -193,8 +190,8 @@ def test_loss_hessian_dict_double_bilinear(
     #      Hess_{B2,B2} = 2 flat(B1 x y^t) flat(y x^t B1)^t K^t.
 
     err_str = "Error in Hessian values"
-    K_mn = commutation_matrix(m, n).requires_grad_(False)
-    K_np = commutation_matrix(n, p).requires_grad_(False)
+    K_mn = commutation_matrix(m, n)
+    K_np = commutation_matrix(n, p)
     outer_prod = torch.outer(x1, x2)
     err = double_bilinear(x1, x2) - target
 
@@ -204,7 +201,7 @@ def test_loss_hessian_dict_double_bilinear(
     prod_transpose_flat = prod.T.flatten().unsqueeze(0)  # Implicit transpose
     actual_value = hessian_dict["B1"]["B1"].view(m * n, m * n)
     expected_value = 2.0 * prod_flat @ prod_transpose_flat @ K_mn.T
-    assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
+    assert actual_value.equal(expected_value), err_str
 
     # Check (B1, B2) Hessian values
     if not diagonal_only:
@@ -216,7 +213,7 @@ def test_loss_hessian_dict_double_bilinear(
         expected_value_1 = 2.0 * prod_left_flat @ prod_right_flat @ K_np.T
         expected_value_2 = 2.0 * err * K_mn @ torch.kron(torch.eye(n), outer_prod)
         expected_value = expected_value_1 + expected_value_2
-        assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
+        assert actual_value.equal(expected_value), err_str
 
     # Check (B2, B1) Hessian values
     if not diagonal_only:
@@ -232,7 +229,7 @@ def test_loss_hessian_dict_double_bilinear(
         outer_prod_transpose = torch.outer(x2, x1)
         expected_value_2 = 2.0 * err * torch.kron(torch.eye(n), outer_prod_transpose) @ K_mn.T
         expected_value = expected_value_1 + expected_value_2
-        assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
+        assert actual_value.equal(expected_value), err_str
 
     # Check (B2, B2) Hessian values
     prod = B1.T @ outer_prod
@@ -240,4 +237,4 @@ def test_loss_hessian_dict_double_bilinear(
     prod_transpose_flat = prod.T.flatten().unsqueeze(0)  # Implicit transpose
     actual_value = hessian_dict["B2"]["B2"].view(n * p, n * p)
     expected_value = 2.0 * prod_flat @ prod_transpose_flat @ K_np.T
-    assert torch.allclose(actual_value, expected_value, atol=1e-7), err_str
+    assert actual_value.equal(expected_value), err_str
