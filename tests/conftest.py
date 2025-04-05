@@ -117,7 +117,7 @@ class DoubleBilinear(nn.Module):
         Returns:
             Model evaluated at `(x1, x2)`.
         """
-        return (x1 @ self.B1) @ (self.B2 @ x2)
+        return torch.sum((x1 @ self.B1) * (x2 @ self.B2.T), dim=-1)
 
 
 class SumNormsSquared(nn.Module):
