@@ -1,4 +1,4 @@
-"""Test code for `batch_model_hessian_dict()`."""
+"""Test code for batch `model_hessian_dict()`."""
 
 # pylint: disable=invalid-name
 
@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import batch_model_hessian_dict
+from src.hesse import model_hessian_dict
 from tests.conftest import commutation_matrix, randint
 
 
@@ -15,15 +15,15 @@ def test_batch_model_hessian_dict_bilinear(bilinear: nn.Module, batch_size: int)
     # Make input data
     x1 = randint((batch_size, bilinear.B.in1_features))
     x2 = randint((batch_size, bilinear.B.in2_features))
-    batch_inputs = (x1, x2)
+    inputs = (x1, x2)
 
     # Compute Hessian dict
     # - PyTorch issues performance warning for unimplemented batching rule
     # - This does not affect the correctness of the implementation.
     with pytest.warns(UserWarning):
-        hessian_dict = batch_model_hessian_dict(
+        hessian_dict = model_hessian_dict(
             model=bilinear,
-            batch_inputs=batch_inputs,
+            inputs=inputs,
         )
 
     # Check keys
@@ -33,7 +33,9 @@ def test_batch_model_hessian_dict_bilinear(bilinear: nn.Module, batch_size: int)
 
     # Check Hessian shapes
     err_str = "Error in Hessian shapes"
-    output_shape = torch.Size([batch_size, 1])  # Model output is [batch_size, 1]
+    output_shape = torch.Size([batch_size, 1])  # Model output is (batch_size, 1)
+
+    # Check (B.weight, B.weight) Hessian shape
     expected_shape = output_shape + 2 * bilinear.B.weight.shape
     assert hessian_dict["B.weight"]["B.weight"].shape == expected_shape
 
@@ -56,12 +58,12 @@ def test_batch_model_hessian_dict_double_bilinear(
     # Make input data
     x1 = randint((batch_size, m))
     x2 = randint((batch_size, p))
-    batch_inputs = (x1, x2)
+    inputs = (x1, x2)
 
     # Compute Hessian dict
-    hessian_dict = batch_model_hessian_dict(
+    hessian_dict = model_hessian_dict(
         model=double_bilinear,
-        batch_inputs=batch_inputs,
+        inputs=inputs,
         diagonal_only=diagonal_only,
     )
 
@@ -77,7 +79,7 @@ def test_batch_model_hessian_dict_double_bilinear(
 
     # Check Hessian shapes
     err_str = "Error in Hessian shapes"
-    output_shape = torch.Size([batch_size])  # Model output is [batch_size]
+    output_shape = torch.Size([batch_size])  # Model output is (batch_size)
 
     # Check (B1, B1) Hessian shape
     expected_shape = output_shape + 2 * B1.shape
@@ -135,12 +137,12 @@ def test_batch_model_hessian_dict_double_bilinear_frozen(
     # Make input data
     x1 = randint((batch_size, m))
     x2 = randint((batch_size, p))
-    batch_inputs = (x1, x2)
+    inputs = (x1, x2)
 
     # Compute Hessian dict
-    hessian_dict = batch_model_hessian_dict(
+    hessian_dict = model_hessian_dict(
         model=double_bilinear_frozen,
-        batch_inputs=batch_inputs,
+        inputs=inputs,
     )
 
     # Check keys
@@ -173,12 +175,12 @@ def test_batch_model_hessian_dict_sum_norms_squared(
     m, n = A1.shape[0], A1.shape[1]
 
     # Make input data
-    batch_inputs = randint((batch_size,))
+    inputs = randint((batch_size,))  # Model output is (batch_size)
 
     # Compute Hessian dict
-    hessian_dict = batch_model_hessian_dict(
+    hessian_dict = model_hessian_dict(
         model=sum_norms_squared,
-        batch_inputs=batch_inputs,
+        inputs=inputs,
         diagonal_only=diagonal_only,
     )
 
@@ -194,7 +196,7 @@ def test_batch_model_hessian_dict_sum_norms_squared(
 
     # Check Hessian shapes
     err_str = "Error in Hessian shapes"
-    output_shape = torch.Size([batch_size])  # Model output is [batch_size]
+    output_shape = torch.Size([batch_size])  # Model output is (batch_size)
 
     # Check (A1, A1) Hessian shape
     expected_shape = output_shape + 2 * A1.shape
@@ -221,7 +223,7 @@ def test_batch_model_hessian_dict_sum_norms_squared(
     # Check (A1, A1) Hessian values
     for batch in range(batch_size):
         actual_value = hessian_dict["A1"]["A1"][batch].view(m * n, m * n)
-        expected_value = 2.0 * batch_inputs[batch] * torch.eye(m * n)
+        expected_value = 2.0 * inputs[batch] * torch.eye(m * n)
         assert actual_value.equal(expected_value), err_str
 
     # Check (A1, A2) Hessian values
@@ -235,7 +237,7 @@ def test_batch_model_hessian_dict_sum_norms_squared(
     # Check (A2, A2) Hessian values
     for batch in range(batch_size):
         actual_value = hessian_dict["A2"]["A2"][batch].view(m * n, m * n)
-        expected_value = 2.0 * batch_inputs[batch] * torch.eye(m * n)
+        expected_value = 2.0 * inputs[batch] * torch.eye(m * n)
         assert actual_value.equal(expected_value), err_str
 
 
@@ -249,12 +251,12 @@ def test_batch_model_hessian_dict_sum_norms_squared_frozen(
     m, n = A1.shape[0], A1.shape[1]
 
     # Make input data
-    batch_inputs = randint((batch_size,))
+    inputs = randint((batch_size,))  # Model output is (batch_size)
 
     # Compute Hessian dict
-    hessian_dict = batch_model_hessian_dict(
+    hessian_dict = model_hessian_dict(
         model=sum_norms_squared_frozen,
-        batch_inputs=batch_inputs,
+        inputs=inputs,
     )
 
     # Check keys
@@ -275,5 +277,5 @@ def test_batch_model_hessian_dict_sum_norms_squared_frozen(
     # Check (A2, A2) Hessian values
     for batch in range(batch_size):
         actual_value = hessian_dict["A2"]["A2"][batch].view(m * n, m * n)
-        expected_value = 2.0 * batch_inputs[batch] * torch.eye(m * n)
+        expected_value = 2.0 * inputs[batch] * torch.eye(m * n)
         assert actual_value.equal(expected_value), err_str

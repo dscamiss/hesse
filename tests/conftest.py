@@ -193,5 +193,5 @@ def fixture_batch_size() -> int:
 
 @pytest.fixture(name="mse")
 def fixture_mse() -> Criterion:
-    """Make MSE loss criterion."""
-    return nn.MSELoss()
+    """Make MSE loss criterion (no normalization by batch size)."""
+    return nn.MSELoss(reduction="sum")

@@ -32,11 +32,11 @@ where vec() is the row-major vectorization map.
 from collections import defaultdict
 
 from jaxtyping import Num, jaxtyped
-from torch import Tensor, nn, vmap
+from torch import Tensor, nn
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import BatchInputs, BatchTarget, Criterion, HessianDict, Inputs, Params, Target
+from src.hesse.types import Criterion, HessianDict, Inputs, Params, Target
 from src.hesse.utils import make_tuple
 
 _ParamDict = dict[str, nn.Parameter]
@@ -127,53 +127,6 @@ def model_hessian_dict(
 
 
 @jaxtyped(typechecker=typechecker)
-def batch_model_hessian_dict(
-    model: nn.Module, batch_inputs: BatchInputs, params: Params = None, diagonal_only: bool = False
-) -> HessianDict:
-    """
-    Batch Hessian of a model with respect to its parameters.
-
-    Args:
-        model: Network model.
-        batch_inputs: Batch model inputs.
-        params: Specific model parameters to use.  Default value is `None`,
-            which means use all model parameters which are not frozen.
-        diagonal_only: Make diagonal data only.  Default value is `False`.
-
-    Returns:
-        Batch Hessian of `model` with respect to its parameters, represented
-        as a dict.
-
-        The output `hess` is such that `hess["A"]["B"][b, :]` represents the
-        Hessian matrix block corresponding to batch `b` and named parameters
-        `A` and `B`.
-    """
-    # Ensure `batch_inputs` is a tuple
-    batch_inputs = make_tuple(batch_inputs)
-
-    # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
-    # compatible with the `BatchedTensor` type produced by `vmap()`.
-    def model_hessian_dict_wrapper(inputs: Tensor) -> HessianDict:
-        """
-        Wrap `model_hessian_dict()` for vectorization with `torch.vmap()`.
-
-        Args:
-            inputs: Model inputs.
-
-        Returns:
-            Hessian result for the specified model inputs.
-        """
-        return model_hessian_dict(
-            model=model,
-            inputs=inputs,
-            params=params,
-            diagonal_only=diagonal_only,
-        )
-
-    return vmap(model_hessian_dict_wrapper)(batch_inputs)
-
-
-@jaxtyped(typechecker=typechecker)
 def loss_hessian_dict(
     model: nn.Module,
     criterion: Criterion,
@@ -236,63 +189,3 @@ def loss_hessian_dict(
     else:
         hess = hessian(functional_loss)(hessian_params)
     return hess
-
-
-@jaxtyped(typechecker=typechecker)
-def batch_loss_hessian_dict(
-    model: nn.Module,
-    criterion: Criterion,
-    batch_inputs: BatchInputs,
-    batch_target: BatchTarget,
-    params: Params = None,
-    diagonal_only: bool = False,
-) -> HessianDict:
-    """
-    Batch Hessian of a loss function with respect to model parameters.
-
-    Args:
-        model: Network model.
-        criterion: Loss criterion.
-        batch_inputs: Batch model inputs.
-        batch_target: Batch target model output.
-        params: Specific model parameters to use.  Default value is `None`,
-            which means use all model parameters which are not frozen.
-        diagonal_only: Make diagonal data only.  Default value is `False`.
-
-    Returns:
-        Batch Hessian of the loss function
-
-            `loss = criterion(model(inputs), target)`
-
-        with respect to the specified model parameters, represented as a dict.
-
-        The output `hess` is such that `hess["A"]["B"][b, :]` represents the
-        Hessian matrix block corresponding to batch `b` and named parameters
-        `A` and `B`.
-    """
-    # Ensure `batch_inputs` is a tuple
-    batch_inputs = make_tuple(batch_inputs)
-
-    # Note: Basic `Tensor` type hint is used here since `jaxtyping` is not
-    # compatible with the `BatchedTensor` type produced by `vmap()`.
-    def loss_hessian_dict_wrapper(inputs: Tensor, target: Tensor) -> HessianDict:
-        """
-        Wrap `loss_hessian_dict()` for vectorization with `torch.vmap()`.
-
-        Args:
-            inputs: Model inputs.
-            target: Target model output.
-
-        Returns:
-            Hessian result for the specified model inputs and target.
-        """
-        return loss_hessian_dict(
-            model=model,
-            criterion=criterion,
-            inputs=inputs,
-            target=target,
-            params=params,
-            diagonal_only=diagonal_only,
-        )
-
-    return vmap(loss_hessian_dict_wrapper)(batch_inputs, batch_target)
