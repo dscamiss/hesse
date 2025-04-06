@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import pytest
 import torch
-from torch import nn
+from torch import nn, Tensor
 
 from src.hesse import loss_hessian_dict
 from src.hesse.types import Criterion
@@ -129,7 +129,7 @@ def test_batch_loss_hessian_dict_double_bilinear(
     K_np = commutation_matrix(n, p)
 
     # Accumulate expected Hessian values
-    expected_value = defaultdict(dict)
+    expected_value: dict[str, dict[str, Tensor]] = defaultdict(dict)
     expected_value["B1"]["B1"] = torch.zeros(m * n, m * n)
     expected_value["B1"]["B2"] = torch.zeros(m * n, n * p)
     expected_value["B2"]["B1"] = torch.zeros(n * p, m * n)
