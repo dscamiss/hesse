@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import pytest
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
 
 from src.hesse import loss_hessian_dict
 from src.hesse.types import Criterion
