@@ -30,13 +30,23 @@ where vec() is the row-major vectorization map.
 # mypy: disable-error-code="no-any-return"
 
 from collections import defaultdict
+from typing import Union
 
 from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import Criterion, HessianDict, Inputs, Params, Target
+from src.hesse.types import (
+    BatchHessianDict,
+    BatchInputs,
+    BatchTarget,
+    Criterion,
+    HessianDict,
+    Inputs,
+    Params,
+    Target,
+)
 from src.hesse.utils import make_tuple
 
 _ParamDict = dict[str, nn.Parameter]
@@ -55,7 +65,8 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
             which means use all model parameters which are not frozen.
 
     Returns:
-        Dict containing Hessian parameters.
+        Dict `hessian_params` that maps parameter names to parameters.  The
+        keys of this dict are the selected parameter names.
 
     Raises:
         ValueError: If no Hessian parameters are selected.
@@ -75,25 +86,31 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
 @jaxtyped(typechecker=typechecker)
 def model_hessian_dict(
     model: nn.Module, inputs: Inputs, params: Params = None, diagonal_only: bool = False
-) -> HessianDict:
+) -> Union[HessianDict, BatchHessianDict]:
     """
-    Hessian of a model with respect to its parameters.
-
-    This function expects `inputs` to have no batch dimension.
+    Hessian (or batch Hessian) of a model with respect to its parameters.
 
     Args:
         model: Network model.
-        inputs: Inputs to the model.
+        inputs: Inputs (or batch inputs) to the model.
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
-        diagonal_only: Make diagonal data only.  Default value is `False`.
+        diagonal_only: Make diagonal blocks only.  Default value is `False`.
 
     Returns:
-        Hessian of `model` with respect to its parameters, represented as a
-        dict.
+        Hessian (or batch Hessian) of `model` with respect to its parameters,
+        represented as a dict.
 
-        The output `hess` is such that `hess["A"]["B"]` represents the Hessian
-        matrix block corresponding to named parameters `A` and `B`.
+        When `inputs` is not batched, the output `hessian_dict` is such that
+        `hessian_dict["P"]["Q"]` represents the Hessian matrix block
+        corresponding to parameters named `P` and `Q`.
+
+        When `inputs` is batched, the output `hessian_dict` is such that
+        `hessian_dict["P"]["Q"][b, :]` represents the Hessian matrix block
+        corresponding to parameters named `P` and `Q` and batch `b`.
+
+        If `diagonal_only` is `True`, then the only valid keys for
+        `hessian_dict` are of the form `hessian_dict["P"]["P"]`.
     """
     # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
@@ -117,47 +134,50 @@ def model_hessian_dict(
 
     if diagonal_only:
         # Handle `diagonal_only` case with multiple calls to `hessian()`
-        hess: HessianDict = defaultdict(dict)
+        hessian_dict: Union[HessianDict, BatchHessianDict] = defaultdict(dict)
         for param_name, param in hessian_params.items():
-            hess_single = hessian(functional_forward)({param_name: param})
-            hess[param_name][param_name] = hess_single[param_name][param_name]
+            hessian_single = hessian(functional_forward)({param_name: param})
+            hessian_dict[param_name][param_name] = hessian_single[param_name][param_name]
     else:
-        hess = hessian(functional_forward)(hessian_params)
-    return hess
+        hessian_dict = hessian(functional_forward)(hessian_params)
+
+    return hessian_dict
 
 
 @jaxtyped(typechecker=typechecker)
 def loss_hessian_dict(
     model: nn.Module,
     criterion: Criterion,
-    inputs: Inputs,
-    target: Target,
+    inputs: Union[Inputs, BatchInputs],
+    target: Union[Target, BatchTarget],
     params: Params = None,
     diagonal_only: bool = False,
 ) -> HessianDict:
     """
     Hessian of a loss function with respect to model parameters.
 
-    This version expects `inputs` and `target` to have no batch dimension.
-
     Args:
         model: Network model.
         criterion: Loss criterion.
-        inputs: Model inputs.
-        target: Target model output.
+        inputs: Inputs (or batch inputs) to the model.
+        target: Target outputs (or batch outputs) from the model.
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
-        diagonal_only: Make diagonal data only.  Default value is `False`.
+        diagonal_only: Make diagonal blocks only.  Default value is `False`.
 
     Returns:
-        Hessian of the loss function
+        Hessian of the loss function `criterion(model(inputs), target)` with
+        respect to the parameters of `model`, represented as a dict.
 
-            `loss = criterion(model(inputs), target)`
+        The output `hessian_dict` is such that `hessian_dict["P"]["Q"]`
+        represents the Hessian matrix block corresponding to parameters named
+        `P` and `Q`.
 
-        with respect to model parameters, represented as a dict.
+        If `diagonal_only` is `True`, then the only valid keys for
+        `hessian_dict` are of the form `hessian_dict["P"]["P"]`.
 
-        The output `hess` is such that `hess["A"]["B"]` represents the Hessian
-        matrix block corresponding to named parameters `A` and `B`.
+        Note that `hessian_dict` is not batched, even if `inputs` is batched.
+        The loss function is computed using the entire batch.
     """
     # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
@@ -182,10 +202,11 @@ def loss_hessian_dict(
 
     if diagonal_only:
         # Handle `diagonal_only` case with multiple calls to `hessian()`
-        hess: HessianDict = defaultdict(dict)
+        hessian_dict: HessianDict = defaultdict(dict)
         for param_name, param in hessian_params.items():
-            hess_single = hessian(functional_loss)({param_name: param})
-            hess[param_name][param_name] = hess_single[param_name][param_name]
+            hessian_single = hessian(functional_loss)({param_name: param})
+            hessian_dict[param_name][param_name] = hessian_single[param_name][param_name]
     else:
-        hess = hessian(functional_loss)(hessian_params)
-    return hess
+        hessian_dict = hessian(functional_loss)(hessian_params)
+
+    return hessian_dict
