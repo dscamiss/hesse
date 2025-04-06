@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import batch_model_hessian_dict, model_hessian_dict
+from src.hesse import model_hessian_dict
 from src.hesse.hessian_dict import select_hessian_params
 from src.hesse.hessian_matrix import (
     batch_hessian_matrix_from_hessian_dict,
@@ -128,14 +128,14 @@ def test_batch_hessian_matrix_from_hessian_dict(
     batch_inputs = (x1, x2)
 
     # Compute Hessian dict
-    batch_hessian_dict = batch_model_hessian_dict(
+    batch_hessian_dict = model_hessian_dict(
         model=double_bilinear,
-        batch_inputs=batch_inputs,
+        inputs=batch_inputs,
         diagonal_only=diagonal_only,
     )
 
     # Make Hessian matrix
-    hessian_matrix = batch_hessian_matrix_from_hessian_dict(
+    batch_hessian_matrix = batch_hessian_matrix_from_hessian_dict(
         model=double_bilinear,
         batch_hessian_dict=batch_hessian_dict,
         diagonal_only=diagonal_only,
@@ -144,7 +144,7 @@ def test_batch_hessian_matrix_from_hessian_dict(
     # Check Hessian matrix shape
     err_str = "Error in Hessian matrix shape"
     expected_shape = torch.Size([batch_size]) + 2 * torch.Size([(m * n) + (n * p)])
-    assert hessian_matrix.shape == expected_shape, err_str
+    assert batch_hessian_matrix.shape == expected_shape, err_str
 
     # Check Hessian matrix values
     err_str = "Error in Hessian matrix values"
@@ -165,4 +165,4 @@ def test_batch_hessian_matrix_from_hessian_dict(
         row_1 = torch.cat((C, D), dim=1)
         expected_hessian_matrix = torch.cat((row_0, row_1), dim=0)
 
-        assert torch.all(hessian_matrix[batch, :] == expected_hessian_matrix), err_str
+        assert torch.all(batch_hessian_matrix[batch, :] == expected_hessian_matrix), err_str

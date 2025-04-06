@@ -21,8 +21,8 @@ def test_batch_loss_hessian_dict_bilinear(
     m, n = bilinear.B.in1_features, bilinear.B.in2_features
     x1 = randint((batch_size, m))
     x2 = randint((batch_size, n))
-    inputs = (x1, x2)
-    target = randint((batch_size, 1))  # Model output is (batch_size, 1)
+    batch_inputs = (x1, x2)
+    batch_target = randint((batch_size, 1))  # Model output is (batch_size, 1)
 
     # Compute Hessian dict
     # - PyTorch issues performance warning for unimplemented batching rule
@@ -31,8 +31,8 @@ def test_batch_loss_hessian_dict_bilinear(
         hessian_dict = loss_hessian_dict(
             model=bilinear,
             criterion=mse,
-            inputs=inputs,
-            target=target,
+            inputs=batch_inputs,
+            target=batch_target,
         )
 
     # Check keys
@@ -78,15 +78,15 @@ def test_batch_loss_hessian_dict_double_bilinear(
     # Make input data
     x1 = randint((batch_size, m))
     x2 = randint((batch_size, p))
-    inputs = (x1, x2)
-    target = randint((batch_size,))  # Model output is (batch_size)
+    batch_inputs = (x1, x2)
+    batch_target = randint((batch_size,))  # Model output is (batch_size)
 
     # Compute Hessian dict
     hessian_dict = loss_hessian_dict(
         model=double_bilinear,
         criterion=mse,
-        inputs=inputs,
-        target=target,
+        inputs=batch_inputs,
+        target=batch_target,
         diagonal_only=diagonal_only,
     )
 
@@ -137,7 +137,7 @@ def test_batch_loss_hessian_dict_double_bilinear(
 
     for batch in range(batch_size):
         outer_prod = torch.outer(x1[batch, :], x2[batch, :])
-        err = double_bilinear(x1[batch, :], x2[batch, :]) - target[batch]
+        err = double_bilinear(x1[batch, :], x2[batch, :]) - batch_target[batch]
 
         # Check (B1, B1) Hessian values
         prod = outer_prod @ B2.T
