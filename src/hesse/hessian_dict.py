@@ -1,5 +1,5 @@
 """
-Helper functions to compute Hessian data.
+Functions to help compute Hessian data.
 
 The functions in this module are concerned with Hessians of models with
 respect to their parameters.
@@ -53,7 +53,21 @@ _ParamDict = dict[str, nn.Parameter]
 _TensorDict = dict[str, Tensor]
 
 
-def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict:
+def is_batch_hessian_dict(hessian_dict: Union[HessianDict, BatchHessianDict]) -> bool:
+    """
+    Check for a batch Hessian dict.
+
+    Args:
+        hessian_dict: Hessian (or batch Hessian) dict.
+
+    Returns:
+        `True` if and only if `hessian_dict` is a batch Hessian dict.
+    """
+    param_name = next(iter(hessian_dict))
+    return hessian_dict[param_name][param_name].ndim == 3
+
+
+def _select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict:
     """
     Select Hessian parameters to use.
 
@@ -96,8 +110,8 @@ def _check_batch_dimension_across_inputs_and_hessians(
         batch_hessian_dict: Batch Hessian dict.
 
     Returns:
-        Output is `True` if and only if `inputs` and `batch_hessian_dict` have
-        a consistent batch dimension.
+        `True` if and only if `inputs` and `batch_hessian_dict` have a
+        consistent batch dimension.
     """
     ref_batch_dim = None
 
@@ -207,7 +221,7 @@ def model_hessian_dict(
         """
         return functional_call(model, _params, inputs)
 
-    hessian_params = select_hessian_params(model, params)
+    hessian_params = _select_hessian_params(model, params)
 
     if diagonal_only:
         # Handle `diagonal_only` case with multiple calls to `hessian()`
@@ -226,8 +240,7 @@ def model_hessian_dict(
         raise RuntimeError("Mismatched number of dimensions")
 
     # Sanity check on batch dimensions, if necessary
-    param_name = next(iter(hessian_dict.keys()))
-    if hessian_dict[param_name][param_name].ndim == 3:
+    if is_batch_hessian_dict(hessian_dict):
         if not _check_batch_dimension_across_inputs_and_hessians(inputs, hessian_dict):
             raise RuntimeError("Mismatched batch dimensions")
 
@@ -295,7 +308,7 @@ def loss_hessian_dict(
         output = functional_call(model, _params, inputs)
         return criterion(output, target)
 
-    hessian_params = select_hessian_params(model, params)
+    hessian_params = _select_hessian_params(model, params)
 
     if diagonal_only:
         # Handle `diagonal_only` case with multiple calls to `hessian()`
