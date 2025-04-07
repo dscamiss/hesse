@@ -84,8 +84,78 @@ def select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict
 
 
 @jaxtyped(typechecker=typechecker)
+def _check_batch_dimension_across_inputs_and_hessians(
+    inputs: tuple[Num[Tensor, "b ..."], ...],
+    batch_hessian_dict: BatchHessianDict,
+) -> bool:
+    """
+    Check for consistent batch dimension across inputs and Hessians.
+
+    Args:
+        inputs: Batch inputs to the model.
+        batch_hessian_dict: Batch Hessian dict.
+
+    Returns:
+        Output is `True` if and only if `inputs` and `batch_hessian_dict` have
+        a consistent batch dimension.
+    """
+    ref_batch_dim = None
+
+    # Check batch dimension across inputs
+    for input_single in inputs:
+        # Get reference batch dimension from first input
+        if ref_batch_dim is None:
+            ref_batch_dim = input_single.shape[0]
+        else:
+            if input_single.shape[0] != ref_batch_dim:
+                return False
+
+    # Check batch dimension across Hessians
+    for param_name_outer in batch_hessian_dict.keys():
+        for param_name_inner in batch_hessian_dict[param_name_outer].keys():
+            hessian_single = batch_hessian_dict[param_name_outer][param_name_inner]
+            if hessian_single.shape[0] != ref_batch_dim:
+                return False
+
+    return True
+
+
+@jaxtyped(typechecker=typechecker)
+def _check_num_dimensions_across_hessians(
+    hessian_dict: Union[HessianDict, BatchHessianDict]
+) -> bool:
+    """
+    Check for consistent number of dimensions across Hessians.
+
+    Args:
+        hessian_dict: Hessian (or batch Hessian) dict.
+
+    Returns:
+        Output is `True` if and only if `hessian_dict` has a consistent number
+        of dimensions.
+    """
+    ref_ndim = None
+
+    # Check number of dimensions across Hessians
+    for param_name_outer in hessian_dict.keys():
+        for param_name_inner in hessian_dict[param_name_outer].keys():
+            hessian_single = hessian_dict[param_name_outer][param_name_inner]
+            # Get reference number of dimensions from first Hessian
+            if ref_ndim is None:
+                ref_ndim = hessian_single.ndim
+            else:
+                if hessian_single.ndim != ref_ndim:
+                    return False
+
+    return True
+
+
+@jaxtyped(typechecker=typechecker)
 def model_hessian_dict(
-    model: nn.Module, inputs: Inputs, params: Params = None, diagonal_only: bool = False
+    model: nn.Module,
+    inputs: Union[Inputs, BatchInputs],
+    params: Params = None,
+    diagonal_only: bool = False,
 ) -> Union[HessianDict, BatchHessianDict]:
     """
     Hessian (or batch Hessian) of a model with respect to its parameters.
@@ -111,9 +181,16 @@ def model_hessian_dict(
 
         If `diagonal_only` is `True`, then the only valid keys for
         `hessian_dict` are of the form `hessian_dict["P"]["P"]`.
+
+    Raises:
+        RuntimeError: If the output fails various dimension checks.
     """
     # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
+
+    # Put model into eval mode to avoid side effects, ensure repeatability
+    save_training_mode = model.training
+    model.eval()
 
     # Type hint is `_TensorDict' here since `hessian()` changes data type
     @jaxtyped(typechecker=typechecker)
@@ -140,6 +217,19 @@ def model_hessian_dict(
             hessian_dict[param_name][param_name] = hessian_single[param_name][param_name]
     else:
         hessian_dict = hessian(functional_forward)(hessian_params)
+
+    # Restore training mode
+    model.train(save_training_mode)
+
+    # Sanity check on number of dimensions
+    if not _check_num_dimensions_across_hessians(hessian_dict):
+        raise RuntimeError("Mismatched number of dimensions")
+
+    # Sanity check on batch dimensions, if necessary
+    param_name = next(iter(hessian_dict.keys()))
+    if hessian_dict[param_name][param_name].ndim == 3:
+        if not _check_batch_dimension_across_inputs_and_hessians(inputs, hessian_dict):
+            raise RuntimeError("Mismatched batch dimensions")
 
     return hessian_dict
 
@@ -178,9 +268,16 @@ def loss_hessian_dict(
 
         Note that `hessian_dict` is not batched, even if `inputs` is batched.
         The loss function is computed using the entire batch.
+
+    Raises:
+        RuntimeError: If the output fails various dimension checks.
     """
     # Ensure `inputs` is a tuple
     inputs = make_tuple(inputs)
+
+    # Put model into eval mode to avoid side effects, ensure repeatability
+    save_training_mode = model.training
+    model.eval()
 
     # Type hint is `_TensorDict' here since `hessian()` changes data type
     @jaxtyped(typechecker=typechecker)
@@ -208,5 +305,17 @@ def loss_hessian_dict(
             hessian_dict[param_name][param_name] = hessian_single[param_name][param_name]
     else:
         hessian_dict = hessian(functional_loss)(hessian_params)
+
+    # Restore training mode
+    model.train(save_training_mode)
+
+    # Sanity check on number of dimensions
+    if not _check_num_dimensions_across_hessians(hessian_dict):
+        raise RuntimeError("Mismatched number of dimensions")
+
+    # Sanity check on batch dimension (we expect no batch dimension)
+    param_name = next(iter(hessian_dict.keys()))
+    if hessian_dict[param_name][param_name].ndim == 3:
+        raise RuntimeError("Unexpected batch dimension")
 
     return hessian_dict
