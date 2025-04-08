@@ -16,4 +16,7 @@ BatchHessianDict = dict[str, dict[str, Num[Tensor, "b ..."]]]
 BatchInputs = Union[Num[Tensor, "b ..."], tuple[Num[Tensor, "b ..."], ...]]
 BatchTarget = Num[Tensor, "b ..."]
 
+HessianMatrix = Num[Tensor, "n n"]
+BatchHessianMatrix = Num[Tensor, "b n n"]
+
 Params = Optional[Iterable[str]]

@@ -4,24 +4,10 @@ import importlib.metadata
 import os
 
 from src.hesse.hessian_dict import loss_hessian_dict, model_hessian_dict
-from src.hesse.hessian_matrix import (
-    batch_loss_hessian_matrix,
-    batch_model_hessian_matrix,
-    loss_hessian_matrix,
-    model_hessian_matrix,
-)
-from src.hesse.sharpness import (
-    batch_loss_sharpness,
-    batch_model_sharpness,
-    loss_sharpness,
-    model_sharpness,
-)
+from src.hesse.hessian_matrix import loss_hessian_matrix, model_hessian_matrix
+from src.hesse.sharpness import loss_sharpness, model_sharpness
 
 __all__ = [
-    "batch_loss_hessian_matrix",
-    "batch_loss_sharpness",
-    "batch_model_hessian_matrix",
-    "batch_model_sharpness",
     "loss_hessian_dict",
     "loss_hessian_matrix",
     "loss_sharpness",

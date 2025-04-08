@@ -1,4 +1,4 @@
-"""Test code for `loss_hessian_dict()`."""
+"""Test code for non-batch `loss_hessian_dict()`."""
 
 # pylint: disable=invalid-name,too-many-statements
 
@@ -12,8 +12,8 @@ from tests.conftest import commutation_matrix, randint
 
 
 def test_loss_hessian_dict_bilinear(bilinear: nn.Module, mse: Criterion) -> None:
-    """Test with bilinear model."""
-    # Make input data
+    """Non-batch `loss_hessian_dict()` with bilinear model."""
+    # Make inputs
     m, n = bilinear.B.in1_features, bilinear.B.in2_features
     x1 = randint((m,))
     x2 = randint((n,))
@@ -36,8 +36,8 @@ def test_loss_hessian_dict_bilinear(bilinear: nn.Module, mse: Criterion) -> None
     assert list(hessian_dict.keys()) == ["B.weight"], err_str
     assert list(hessian_dict["B.weight"].keys()) == ["B.weight"], err_str
 
-    # Check Hessian shape
-    err_str = "Error in Hessian shape"
+    # Check Hessian shapes
+    err_str = "Error in Hessian shapes"
     expected_shape = 2 * bilinear.B.weight.shape
     assert hessian_dict["B.weight"]["B.weight"].shape == expected_shape, err_str
 
@@ -76,13 +76,13 @@ def test_loss_hessian_dict_bilinear(bilinear: nn.Module, mse: Criterion) -> None
 def test_loss_hessian_dict_double_bilinear(
     double_bilinear: nn.Module, mse: Criterion, diagonal_only: bool
 ) -> None:
-    """Test with double-bilinear model."""
+    """Non-batch `loss_hessian_dict()` with double-bilinear model."""
     # Make aliases for brevity
     B1 = double_bilinear.B1
     B2 = double_bilinear.B2
     m, n, p = B1.shape[0], B1.shape[1], B2.shape[1]
 
-    # Make input data
+    # Make inputs
     x1 = randint((m,))
     x2 = randint((p,))
     inputs = (x1, x2)
@@ -108,7 +108,7 @@ def test_loss_hessian_dict_double_bilinear(
         assert list(hessian_dict["B2"].keys()) == ["B2"], err_str
 
     # Check Hessian shapes
-    err_str = "Error in Hessian shape"
+    err_str = "Error in Hessian shapes"
 
     # Check (B1, B1) Hessian shape
     expected_shape = 2 * B1.shape

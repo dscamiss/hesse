@@ -53,20 +53,6 @@ _ParamDict = dict[str, nn.Parameter]
 _TensorDict = dict[str, Tensor]
 
 
-def is_batch_hessian_dict(hessian_dict: Union[HessianDict, BatchHessianDict]) -> bool:
-    """
-    Check for a batch Hessian dict.
-
-    Args:
-        hessian_dict: Hessian (or batch Hessian) dict.
-
-    Returns:
-        `True` if and only if `hessian_dict` is a batch Hessian dict.
-    """
-    param_name = next(iter(hessian_dict))
-    return hessian_dict[param_name][param_name].ndim == 3
-
-
 def _select_hessian_params(model: nn.Module, params: Params = None) -> _ParamDict:
     """
     Select Hessian parameters to use.
@@ -170,6 +156,7 @@ def model_hessian_dict(
     inputs: Union[Inputs, BatchInputs],
     params: Params = None,
     diagonal_only: bool = False,
+    is_batched: bool = True,
 ) -> Union[HessianDict, BatchHessianDict]:
     """
     Hessian (or batch Hessian) of a model with respect to its parameters.
@@ -180,18 +167,19 @@ def model_hessian_dict(
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.
+        is_batched: Batch inputs provided.  Default value is `True`.
 
     Returns:
         Hessian (or batch Hessian) of `model` with respect to its parameters,
         represented as a dict.
 
-        When `inputs` is not batched, the output `hessian_dict` is such that
-        `hessian_dict["P"]["Q"]` represents the Hessian matrix block
-        corresponding to parameters named `P` and `Q`.
-
         When `inputs` is batched, the output `hessian_dict` is such that
         `hessian_dict["P"]["Q"][b, :]` represents the Hessian matrix block
         corresponding to parameters named `P` and `Q` and batch `b`.
+
+        When `inputs` is not batched, the output `hessian_dict` is such that
+        `hessian_dict["P"]["Q"]` represents the Hessian matrix block
+        corresponding to parameters named `P` and `Q`.
 
         If `diagonal_only` is `True`, then the only valid keys for
         `hessian_dict` are of the form `hessian_dict["P"]["P"]`.
@@ -240,7 +228,7 @@ def model_hessian_dict(
         raise RuntimeError("Mismatched number of dimensions")
 
     # Sanity check on batch dimensions, if necessary
-    if is_batch_hessian_dict(hessian_dict):
+    if is_batched:
         if not _check_batch_dimension_across_inputs_and_hessians(inputs, hessian_dict):
             raise RuntimeError("Mismatched batch dimensions")
 
@@ -257,13 +245,13 @@ def loss_hessian_dict(
     diagonal_only: bool = False,
 ) -> HessianDict:
     """
-    Hessian of a loss function with respect to model parameters.
+    Hessian (or batch Hessian) of loss with respect to model parameters.
 
     Args:
         model: Network model.
         criterion: Loss criterion.
         inputs: Inputs (or batch inputs) to the model.
-        target: Target outputs (or batch outputs) from the model.
+        target: Target output (or batch output) from the model.
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.

@@ -1,4 +1,4 @@
-"""Test code for `model_sharpness()`."""
+"""Test code for non-batch `model_sharpness()`."""
 
 # pylint: disable=invalid-name
 
@@ -10,8 +10,8 @@ from src.hesse import model_sharpness
 
 
 def test_model_sharpness_bilinear(bilinear: nn.Module) -> None:
-    """Test with bilinear model."""
-    # Make input data
+    """Non-batch `model_sharpness()` with bilinear model."""
+    # Make inputs
     x1 = torch.randn(bilinear.B.in1_features).requires_grad_(False)
     x2 = torch.randn(bilinear.B.in2_features).requires_grad_(False)
     inputs = (x1, x2)
@@ -26,13 +26,13 @@ def test_model_sharpness_bilinear(bilinear: nn.Module) -> None:
 
 
 def test_model_sharpness_double_bilinear(double_bilinear: nn.Module) -> None:
-    """Test with double-bilinear model."""
+    """Non-batch `model_sharpness()` with double-bilinear model."""
     # Make aliases for brevity
     B1 = double_bilinear.B1
     B2 = double_bilinear.B2
     m, p = B1.shape[0], B2.shape[1]
 
-    # Make input data
+    # Make inputs
     x1 = torch.randn(m).requires_grad_(False)
     x2 = torch.randn(p).requires_grad_(False)
     inputs = (x1, x2)

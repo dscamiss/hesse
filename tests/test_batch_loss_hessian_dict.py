@@ -16,8 +16,8 @@ from tests.conftest import commutation_matrix, randint
 def test_batch_loss_hessian_dict_bilinear(
     bilinear: nn.Module, mse: Criterion, batch_size: int
 ) -> None:
-    """Test with bilinear model."""
-    # Make input data
+    """Batch `loss_hessian_dict()` with bilinear model."""
+    # Make batch inputs and batch target
     m, n = bilinear.B.in1_features, bilinear.B.in2_features
     x1 = randint((batch_size, m))
     x2 = randint((batch_size, n))
@@ -69,13 +69,13 @@ def test_batch_loss_hessian_dict_double_bilinear(
     batch_size: int,
     diagonal_only: bool,
 ) -> None:
-    """Test with double-bilinear model."""
+    """Batch `loss_hessian_dict()` with bilinear model."""
     # Make aliases for brevity
     B1 = double_bilinear.B1
     B2 = double_bilinear.B2
     m, n, p = B1.shape[0], B1.shape[1], B2.shape[1]
 
-    # Make input data
+    # Make batch inputs and batch target
     x1 = randint((batch_size, m))
     x2 = randint((batch_size, p))
     batch_inputs = (x1, x2)
@@ -101,7 +101,7 @@ def test_batch_loss_hessian_dict_double_bilinear(
         assert list(hessian_dict["B2"].keys()) == ["B2"], err_str
 
     # Check Hessian shapes
-    err_str = "Error in Hessian shape"
+    err_str = "Error in Hessian shapes"
 
     # Check (B1, B1) Hessian shape
     expected_shape = 2 * B1.shape

@@ -8,12 +8,7 @@ from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
 
-from src.hesse.hessian_matrix import (
-    batch_loss_hessian_matrix,
-    batch_model_hessian_matrix,
-    loss_hessian_matrix,
-    model_hessian_matrix,
-)
+from src.hesse.hessian_matrix import loss_hessian_matrix, model_hessian_matrix
 from src.hesse.types import BatchInputs, BatchTarget, Criterion, Inputs, Params, Target
 from src.hesse.utils import make_tuple
 
