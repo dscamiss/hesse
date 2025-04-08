@@ -73,7 +73,7 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_o
         model=double_bilinear,
         inputs=inputs,
         diagonal_only=diagonal_only,
-        is_batched=False,
+        is_batch=False,
     )
 
     # Make Hessian matrix
@@ -81,7 +81,7 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_o
         model=double_bilinear,
         hessian_dict=hessian_dict,
         diagonal_only=diagonal_only,
-        is_batched=False,
+        is_batch=False,
     )
 
     # Check Hessian matrix shapes

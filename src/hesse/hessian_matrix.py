@@ -31,7 +31,7 @@ def hessian_matrix_from_hessian_dict(
     model: nn.Module,
     hessian_dict: Union[HessianDict, BatchHessianDict],
     diagonal_only: bool,
-    is_batched: bool = True,
+    is_batch: bool = True,
 ) -> Union[HessianMatrix, BatchHessianMatrix]:
     """
     Hessian (or batch Hessian) matrix from Hessian (or batch Hessian) dict.
@@ -43,16 +43,16 @@ def hessian_matrix_from_hessian_dict(
         model: Network model.
         hessian_dict: Hessian (or batch Hessian) dict.
         diagonal_only: Make diagonal blocks only.
-        is_batched: Batch Hessian dict provided.  Default value is `True`.
+        is_batch: Batch Hessian dict provided.  Default value is `True`.
 
     Returns:
         Hessian (or batch Hessian) matrix.
 
-        When `hessian_dict` is batched, the output `hessian_matrix` is such
+        When `hessian_dict` is batch, the output `hessian_matrix` is such
         that `hessian_matrix[b, :]` is the Hessian matrix corresponding to
         batch `b`.
 
-        When `hessian_dict` is not batched, the output `hessian_matrix` is
+        When `hessian_dict` is non-batch, the output `hessian_matrix` is
         such that `hessian_dict` is the Hessian matrix.
 
         If `diagonal_only` is `True`, then the non-diagonal blocks of
@@ -63,11 +63,11 @@ def hessian_matrix_from_hessian_dict(
 
     # Determine batch size
     hessian_param_names = list(hessian_dict.keys())
-    if is_batched:
+    if is_batch:
         param_name = hessian_param_names[0]
         batch_size = hessian_dict[param_name][param_name].shape[0]
     else:
-        # Unbatched case, uses fake batch size of 1 for code commonality
+        # Non-batch case, uses fake batch size of 1 for code commonality
         batch_size = 1
 
     # Determine Hessian matrix size
@@ -81,7 +81,7 @@ def hessian_matrix_from_hessian_dict(
         offset = 0
         for param_name in hessian_param_names:
             param_size = params_dict[param_name].numel()
-            if is_batched:
+            if is_batch:
                 hessian_block = hessian_dict[param_name][param_name][batch, :]
             else:
                 hessian_block = hessian_dict[param_name][param_name]
@@ -92,8 +92,8 @@ def hessian_matrix_from_hessian_dict(
 
     # If `diagonal_only` is `True`, there's no more work to do
     if diagonal_only:
-        # Unbatched case, remove fake batch size
-        if not is_batched:
+        # Non-batch case, remove fake batch size
+        if not is_batch:
             hessian_matrix.squeeze_(0)
         return hessian_matrix
 
@@ -109,7 +109,7 @@ def hessian_matrix_from_hessian_dict(
                 if row_param_name == col_param_name:
                     col_offset += col_param_size
                     continue
-                if is_batched:
+                if is_batch:
                     hessian_block = hessian_dict[row_param_name][col_param_name][batch, :]
                 else:
                     hessian_block = hessian_dict[row_param_name][col_param_name]
@@ -120,8 +120,8 @@ def hessian_matrix_from_hessian_dict(
                 col_offset += col_param_size
             row_offset += row_param_size
 
-    # Unbatched case, remove fake batch size
-    if not is_batched:
+    # Non-batch case, remove fake batch size
+    if not is_batch:
         hessian_matrix.squeeze_(0)
 
     return hessian_matrix
@@ -133,7 +133,7 @@ def model_hessian_matrix(
     inputs: Union[Inputs, BatchInputs],
     params: Params = None,
     diagonal_only: bool = False,
-    is_batched: bool = True,
+    is_batch: bool = True,
 ) -> Union[HessianMatrix, BatchHessianMatrix]:
     """
     Hessian (or batch Hessian) of a model with respect to its parameters.
@@ -144,7 +144,7 @@ def model_hessian_matrix(
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.
-        is_batched: Batch inputs provided.  Default value is `True`.
+        is_batch: Batch inputs provided.  Default value is `True`.
 
     Returns:
         Hessian (or batch Hessian) matrix of `model` with respect to its
@@ -155,7 +155,7 @@ def model_hessian_matrix(
         inputs=inputs,
         params=params,
         diagonal_only=diagonal_only,
-        is_batched=is_batched,
+        is_batch=is_batch,
     )
 
     # TODO: Add number of dimensions check
@@ -164,7 +164,7 @@ def model_hessian_matrix(
         model=model,
         hessian_dict=hessian_dict,
         diagonal_only=diagonal_only,
-        is_batched=is_batched,
+        is_batch=is_batch,
     )
 
 
@@ -176,7 +176,7 @@ def loss_hessian_matrix(
     target: Union[Target, BatchTarget],
     params: Params = None,
     diagonal_only: bool = False,
-    is_batched: bool = True,
+    is_batch: bool = True,
 ) -> Num[Tensor, "n n"]:
     """
     Hessian (or batch Hessian) of loss with respect to model parameters.
@@ -189,8 +189,7 @@ def loss_hessian_matrix(
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.
-        is_batched: Batch inputs and target provided.  Default value is
-            'True'.
+        is_batch: Batch inputs and target provided.  Default value is 'True'.
 
     Returns:
         Hessian (or batch Hessian) matrix of the loss function
@@ -214,5 +213,5 @@ def loss_hessian_matrix(
         model=model,
         hessian_dict=hessian_dict,
         diagonal_only=diagonal_only,
-        is_batched=is_batched,
+        is_batch=is_batch,
     )

@@ -156,7 +156,7 @@ def model_hessian_dict(
     inputs: Union[Inputs, BatchInputs],
     params: Params = None,
     diagonal_only: bool = False,
-    is_batched: bool = True,
+    is_batch: bool = True,
 ) -> Union[HessianDict, BatchHessianDict]:
     """
     Hessian (or batch Hessian) of a model with respect to its parameters.
@@ -167,17 +167,17 @@ def model_hessian_dict(
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.
-        is_batched: Batch inputs provided.  Default value is `True`.
+        is_batch: Batch inputs provided.  Default value is `True`.
 
     Returns:
         Hessian (or batch Hessian) of `model` with respect to its parameters,
         represented as a dict.
 
-        When `inputs` is batched, the output `hessian_dict` is such that
+        When `inputs` is batch, the output `hessian_dict` is such that
         `hessian_dict["P"]["Q"][b, :]` represents the Hessian matrix block
         corresponding to parameters named `P` and `Q` and batch `b`.
 
-        When `inputs` is not batched, the output `hessian_dict` is such that
+        When `inputs` is non-batch, the output `hessian_dict` is such that
         `hessian_dict["P"]["Q"]` represents the Hessian matrix block
         corresponding to parameters named `P` and `Q`.
 
@@ -228,7 +228,7 @@ def model_hessian_dict(
         raise RuntimeError("Mismatched number of dimensions")
 
     # Sanity check on batch dimensions, if necessary
-    if is_batched:
+    if is_batch:
         if not _check_batch_dimension_across_inputs_and_hessians(inputs, hessian_dict):
             raise RuntimeError("Mismatched batch dimensions")
 
@@ -267,8 +267,7 @@ def loss_hessian_dict(
         If `diagonal_only` is `True`, then the only valid keys for
         `hessian_dict` are of the form `hessian_dict["P"]["P"]`.
 
-        Note that `hessian_dict` is not batched, even if `inputs` is batched.
-        The loss function is computed using the entire batch.
+        Note that `hessian_dict` is non-batch, even if `inputs` is batch.
 
     Raises:
         RuntimeError: If the output fails various dimension checks.

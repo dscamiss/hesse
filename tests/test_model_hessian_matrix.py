@@ -24,7 +24,7 @@ def test_model_hessian_matrix_bilinear(bilinear: nn.Module) -> None:
         hessian_matrix = model_hessian_matrix(
             model=bilinear,
             inputs=inputs,
-            is_batched=False,
+            is_batch=False,
         )
 
     # Check Hessian matrix shapes
@@ -57,7 +57,7 @@ def test_model_hessian_matrix_double_bilinear(
         model=double_bilinear,
         inputs=inputs,
         diagonal_only=diagonal_only,
-        is_batched=False,
+        is_batch=False,
     )
 
     # Check Hessian matrix shape

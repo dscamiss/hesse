@@ -24,7 +24,7 @@ def test_model_hessian_dict_bilinear(bilinear: nn.Module) -> None:
         hessian_dict = model_hessian_dict(
             model=bilinear,
             inputs=inputs,
-            is_batched=False,
+            is_batch=False,
         )
 
     # Check keys
@@ -62,7 +62,7 @@ def test_model_hessian_dict_double_bilinear(
         model=double_bilinear,
         inputs=inputs,
         diagonal_only=diagonal_only,
-        is_batched=False,
+        is_batch=False,
     )
 
     # Check keys
@@ -169,7 +169,7 @@ def test_model_hessian_dict_double_bilinear_frozen(double_bilinear_frozen: nn.Mo
     hessian_dict = model_hessian_dict(
         model=double_bilinear_frozen,
         inputs=inputs,
-        is_batched=False,
+        is_batch=False,
     )
 
     # Check keys
@@ -209,7 +209,7 @@ def test_model_hessian_dict_sum_norms_squared(
         model=sum_norms_squared,
         inputs=inputs,
         diagonal_only=diagonal_only,
-        is_batched=False,
+        is_batch=False,
     )
 
     # Check keys
@@ -311,7 +311,7 @@ def test_model_hessian_dict_sum_norms_squared_frozen(
     hessian_dict = model_hessian_dict(
         model=sum_norms_squared_frozen,
         inputs=inputs,
-        is_batched=False,
+        is_batch=False,
     )
 
     # Check keys
