@@ -1,5 +1,5 @@
 """
-Functions to help compute Hessian data.
+Functions to compute Hessian data.
 
 The functions in this module are concerned with Hessians of models with
 respect to their parameters.
@@ -251,7 +251,7 @@ def loss_hessian_dict(
         model: Network model.
         criterion: Loss criterion.
         inputs: Inputs (or batch inputs) to the model.
-        target: Target output (or batch output) from the model.
+        target: Target output (or batch target output) from the model.
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.

@@ -1,4 +1,4 @@
-"""Functions to help compute Hessian matrices."""
+"""Functions to compute Hessian matrices."""
 
 # Next line disables "returns Any" errors caused by unhinted PyTorch functions
 # mypy: disable-error-code="no-any-return"
@@ -25,6 +25,7 @@ from src.hesse.types import (
 )
 
 
+# TODO: Handle multi-output case
 # TODO: Can we refactor to use `vmap` here?
 @jaxtyped(typechecker=typechecker)
 def hessian_matrix_from_hessian_dict(
@@ -58,6 +59,7 @@ def hessian_matrix_from_hessian_dict(
         If `diagonal_only` is `True`, then the non-diagonal blocks of
         `hessian_dict` (or each `hessian_dict[b, :]`) are all zeroes.
     """
+
     def _select_hessian_block() -> Tensor:
         if is_batch:
             hessian_block = hessian_dict[row_param_name][col_param_name][batch, :]
@@ -190,11 +192,12 @@ def loss_hessian_matrix(
         model: Network model.
         criterion: Loss criterion.
         inputs: Inputs (or batch inputs) to the model.
-        target: Target output (or batch output) from the model.
+        target: Target output (or batch target output) from the model.
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.
-        is_batch: Batch inputs and target provided.  Default value is 'True'.
+        is_batch: Batch inputs and batch target provided.  Default value is
+            `True`.
 
     Returns:
         Hessian (or batch Hessian) matrix of the loss function
