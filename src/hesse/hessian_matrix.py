@@ -58,6 +58,18 @@ def hessian_matrix_from_hessian_dict(
         If `diagonal_only` is `True`, then the non-diagonal blocks of
         `hessian_dict` (or each `hessian_dict[b, :]`) are all zeroes.
     """
+    def _select_hessian_block() -> Tensor:
+        if is_batch:
+            hessian_block = hessian_dict[row_param_name][col_param_name][batch, :]
+        else:
+            hessian_block = hessian_dict[row_param_name][col_param_name]
+        return hessian_block
+
+    def _postprocess_hessian_matrix() -> None:
+        # Non-batch case, remove fake batch size
+        if not is_batch:
+            hessian_matrix.squeeze_(0)
+
     # Get model parameters dict
     params_dict = dict(model.named_parameters())
 
@@ -92,9 +104,7 @@ def hessian_matrix_from_hessian_dict(
 
     # If `diagonal_only` is `True`, there's no more work to do
     if diagonal_only:
-        # Non-batch case, remove fake batch size
-        if not is_batch:
-            hessian_matrix.squeeze_(0)
+        _postprocess_hessian_matrix()
         return hessian_matrix
 
     # Populate batch Hessian matrix -- off-diagonal blocks
@@ -109,10 +119,7 @@ def hessian_matrix_from_hessian_dict(
                 if row_param_name == col_param_name:
                     col_offset += col_param_size
                     continue
-                if is_batch:
-                    hessian_block = hessian_dict[row_param_name][col_param_name][batch, :]
-                else:
-                    hessian_block = hessian_dict[row_param_name][col_param_name]
+                hessian_block = _select_hessian_block()
                 hessian_block = hessian_block.view(row_param_size, col_param_size)
                 row_slice = slice(row_offset, row_offset + row_param_size)
                 col_slice = slice(col_offset, col_offset + col_param_size)
@@ -120,9 +127,7 @@ def hessian_matrix_from_hessian_dict(
                 col_offset += col_param_size
             row_offset += row_param_size
 
-    # Non-batch case, remove fake batch size
-    if not is_batch:
-        hessian_matrix.squeeze_(0)
+    _postprocess_hessian_matrix()
 
     return hessian_matrix
 
