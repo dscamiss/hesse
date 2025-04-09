@@ -29,7 +29,8 @@ def test_model_hessian_matrix_bilinear(bilinear: nn.Module) -> None:
 
     # Check Hessian matrix shapes
     err_str = "Error in Hessian matrix shape"
-    expected_shape = 2 * torch.Size([bilinear.B.weight.numel()])
+    output_shape = torch.Size([1])  # Model output is (1)
+    expected_shape = output_shape + 2 * torch.Size([bilinear.B.weight.numel()])
     assert hessian_matrix.shape == expected_shape, err_str
 
     # Check Hessian values

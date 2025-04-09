@@ -79,6 +79,7 @@ def test_hessian_matrix_from_hessian_dict(double_bilinear: nn.Module, diagonal_o
     # Make Hessian matrix
     hessian_matrix = hessian_matrix_from_hessian_dict(
         model=double_bilinear,
+        inputs=inputs,
         hessian_dict=hessian_dict,
         diagonal_only=diagonal_only,
         is_batch=False,
@@ -136,6 +137,7 @@ def test_batch_hessian_matrix_from_hessian_dict(
     # Make batch Hessian matrix
     batch_hessian_matrix = hessian_matrix_from_hessian_dict(
         model=double_bilinear,
+        inputs=batch_inputs,
         hessian_dict=batch_hessian_dict,
         diagonal_only=diagonal_only,
     )

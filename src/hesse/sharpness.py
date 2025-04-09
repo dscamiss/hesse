@@ -77,14 +77,38 @@ def sharpness(
 
     Returns:
         Sharpness (or batch sharpness) of `matrix`.
+
+    Raises:
+        RuntimeError: If `matrix` has an unsupported output shape.
     """
-    if is_batch:
-        batch_size = matrix.shape[0]
-        matrix_sharpness = torch.zeros(batch_size)
-        for batch in range(batch_size):
-            matrix_sharpness[batch] = _sharpness(matrix[batch, :])
+    batch_size = matrix.shape_metadata["batch_size"]
+    output_shape = matrix.shape_metadata["output_shape"]
+    output_size = matrix.shape_metadata["output_size"]
+    zero_dim_output = matrix.shape_metadata["zero_dim_output"]
+
+    # TODO: Handle high-dimensional output shapes
+    if len(output_shape) >= 2:
+        raise RuntimeError("Unsupported high-dimensional output shape")
+
+    # Allocate sharpness
+    matrix_sharpness = torch.zeros(batch_size, output_size)
+
+    # Populate sharpness
+    for batch in range(batch_size):
+        for output in range(output_size):
+            index_tuple = (batch,) if is_batch else ()
+            if not zero_dim_output:
+                index_tuple += (output,)
+            matrix_sharpness = _sharpness(matrix[index_tuple])
+
+    # Postprocess to remove fictitious dimensions
+    if not is_batch:
+        matrix_sharpness.squeeze_(0)
+        if zero_dim_output:
+            matrix_sharpness.squeeze_(0)
     else:
-        matrix_sharpness = _sharpness(matrix)
+        if zero_dim_output:
+            matrix_sharpness.squeeze_(1)
 
     return matrix_sharpness
 
