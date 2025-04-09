@@ -26,6 +26,7 @@ def test_github_actions_env_effect():
     assert not hasattr(_hesse, "__version__"), "Unexpected __version__ attribute"
 
 
+@mock.patch.dict(os.environ, clear=True)
 def test_no_github_actions_env_effect():
     """Test no `GITHUB_ACTIONS` environment variable effect."""
     assert hesse.__version__, "Missing __version__ attribute"
