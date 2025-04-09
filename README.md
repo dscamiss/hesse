@@ -14,8 +14,8 @@ The goal of `hesse` is to simplify the computation of Hessians (and related quan
 
 In particular, the goal is to simplify the computation of:
 
-* *Model Hessians* (these are the Hessians of a given model with respect to its trainable parameters);
-* *Loss function Hessians* (these are the Hessians of `loss(model(inputs), target)` with respect to `model`'s trainable parameters).
+* **Model Hessians** (these are the Hessians of a given model with respect to its trainable parameters);
+* **Loss function Hessians** (these are the Hessians of `loss(model(inputs), target)` with respect to `model`'s trainable parameters).
 
 This is achieved with user-friendly wrappers for `torch.func` transforms.
 
@@ -27,6 +27,8 @@ pip install hesse
 ```
 
 # Example
+
+## Setup
 
 Create a toy multi-input, multi-output model.
 
@@ -47,8 +49,8 @@ class MimoModel(torch.nn.Module):
         Run forward pass.
 
         Args:
-            x: First input tensor of shape (m, n).
-            y: Second input tensor of shape (m, n).
+            x: First input tensor of shape (b, n).
+            y: Second input tensor of shape (b, n).
 
         Returns:
             The matrix
@@ -56,7 +58,7 @@ class MimoModel(torch.nn.Module):
             [ tr(A^t A) x_{    0, :}   tr(B^t B) y_{    0, :} ]
             [ tr(A^t A) x_{    1, :}   tr(B^t B) y_{    1, :} ]
             [           :                        :            ]
-            [ tr(A^t A) x_{m - 1, :}   tr(B^t B) y_{m - 1, :} ].
+            [ tr(A^t A) x_{b - 1, :}   tr(B^t B) y_{b - 1, :} ].
         """
         rows_1 = torch.trace(self.A.T @ self.A) * x
         rows_2 = torch.trace(self.B.T @ self.B) * y
@@ -79,7 +81,9 @@ x = torch.Tensor(
 y = -1.0 * x
 ```
 
-Computing the Hessian matrix of `model` is a one-liner:
+## Full Hessian matrix
+
+Computing the full Hessian matrix of `model` is easy:
 
 ```python
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
@@ -102,12 +106,23 @@ expected[1][3][4:, 4:] = -8.0 * torch.eye(4)
 assert hessian.equal(expected), "Error in Hessian values"
 ```
 
-# TODO
+## Reduced Hessian matrix
 
-- [X] Add remaining test cases
-- [ ] Add diagonal-only sharpness computation 
-- [ ] Sparse storage where appropriate
-- [X] Test with multi-output model
-- [X] Test batch functions with batch data
-- [ ] Remove redundancy in test code
-- [X] Add a few examples
+Computing the Hessian matrix of `model` with respect to a subset of the model parameters is also easy:
+
+```python
+hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=("A"))
+```
+
+We can verify the correctness of the result.
+
+```python
+expected = torch.zeros([2, 4, 4, 4])
+
+expected[0][0] = 2.0 * torch.eye(4)
+expected[0][1] = 4.0 * torch.eye(4)
+expected[1][0] = 6.0 * torch.eye(4)
+expected[1][1] = 8.0 * torch.eye(4)
+
+assert hessian.equal(expected), "Error in Hessian values"
+```
