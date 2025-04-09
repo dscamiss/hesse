@@ -88,8 +88,8 @@ hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
 We can verify the correctness of the result.
 
 ```python
-model_output = model(x, y)
-expected = torch.zeros(model_output.shape + torch.Size([8, 8]))
+expected = torch.zeros([2, 4, 8, 8]))
+
 expected[0][0][:4, :4] =  2.0 * torch.eye(4)
 expected[0][1][:4, :4] =  4.0 * torch.eye(4)
 expected[0][2][4:, 4:] = -2.0 * torch.eye(4)
