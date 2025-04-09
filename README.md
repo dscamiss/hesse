@@ -21,9 +21,11 @@ This is achieved with user-friendly wrappers for `torch.func` transforms.
 
 # Installation
 
+In an existing Python 3.9+ environment:
+
 ```bash
 git clone https://github.com/dscamiss/hesse/
-pip install hesse
+pip install ./hesse
 ```
 
 # Example
@@ -65,7 +67,7 @@ class MimoModel(torch.nn.Module):
         return torch.hstack((rows_1, rows_2))
 ```
 
-Make an instance of `MimoModel` along with some inputs.
+Make an instance of `MimoModel` along with some batch inputs.
 
 ```python
 input_dim = 2
@@ -89,7 +91,7 @@ Computing the full Hessian matrix of `model` is easy:
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
 ```
 
-We can verify the correctness of the result.
+We can now verify the correctness of the result.
 
 ```python
 expected = torch.zeros([2, 4, 8, 8]))
@@ -106,15 +108,17 @@ expected[1][3][4:, 4:] = -8.0 * torch.eye(4)
 assert hessian.equal(expected), "Error in Hessian values"
 ```
 
+Generally speaking, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 2`.
+
 ## Reduced Hessian matrix
 
-Computing the Hessian matrix of `model` with respect to a subset of the model parameters is also easy:
+To compute the Hessian matrix of `model` with respect to a subset of the model parameters, just specify the parameter names:
 
 ```python
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=("A"))
 ```
 
-We can verify the correctness of the result.
+We can again verify the correctness of the result.
 
 ```python
 expected = torch.zeros([2, 4, 4, 4])
