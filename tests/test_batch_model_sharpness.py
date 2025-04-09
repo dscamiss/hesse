@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import model_sharpness
+from hesse import model_sharpness
 
 # TODO: Add more test cases
 

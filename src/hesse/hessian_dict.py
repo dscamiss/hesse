@@ -1,30 +1,4 @@
-"""
-Functions to compute Hessian data.
-
-The functions in this module are concerned with Hessians of models with
-respect to their parameters.
-
-For a model f : R^m --> R with parameters P_1, ..., P_r, the Hessian of f
-with respect to its parameters, evaluated at the input x, is the k-by-k block
-matrix
-
-    Hess(f)(x) = [Hess_{i,j}(f)(x)],
-
-where
-
-                                     d^2 f(x)
-    (Hess_{i,j}(f)(x))_{k,l} = ---------------------
-                               d(P_i)_{k} d(P_j)_{l}
-
-and each parameter P_i has the row-major component ordering.
-
-To evaluate Hess(f)(x) as a bilinear form, we can use the identity
-
-    vec(P_1, ..., P_k)^t Hess(f)(x) vec(Q_1, ..., Q_k)
-        = sum_{i,j=1}^k vec(P_i)^t Hess_{i,j}(f)(x) vec(Q_j),
-
-where vec() is the row-major vectorization map.
-"""
+"""Functions to compute Hessian data."""
 
 # Next line disables "returns Any" errors caused by unhinted PyTorch functions
 # mypy: disable-error-code="no-any-return"
@@ -37,7 +11,7 @@ from torch import Tensor, nn
 from torch.func import functional_call, hessian
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import (
+from hesse.types import (
     BatchHessianDict,
     BatchInputs,
     BatchTarget,

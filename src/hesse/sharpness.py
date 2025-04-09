@@ -10,8 +10,8 @@ from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
 
-from src.hesse.hessian_matrix import loss_hessian_matrix, model_hessian_matrix
-from src.hesse.types import BatchInputs, BatchTarget, Criterion, Inputs, Params, Target
+from hesse.hessian_matrix import loss_hessian_matrix, model_hessian_matrix
+from hesse.types import BatchInputs, BatchTarget, Criterion, Inputs, Params, Target
 
 _Scalar = Num[Tensor, "..."]
 _BatchScalar = Num[Tensor, "b ..."]

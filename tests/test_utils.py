@@ -6,9 +6,9 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import model_hessian_dict
-from src.hesse.hessian_dict import _select_hessian_params
-from src.hesse.hessian_matrix import hessian_matrix_from_hessian_dict
+from hesse import model_hessian_dict
+from hesse.hessian_dict import _select_hessian_params
+from hesse.hessian_matrix import hessian_matrix_from_hessian_dict
 from tests.conftest import commutation_matrix
 
 

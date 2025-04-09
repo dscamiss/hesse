@@ -6,8 +6,8 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import loss_hessian_dict
-from src.hesse.types import Criterion
+from hesse import loss_hessian_dict
+from hesse.types import Criterion
 from tests.conftest import commutation_matrix, randint
 
 

@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from src.hesse import model_hessian_dict
+from hesse import model_hessian_dict
 from tests.conftest import commutation_matrix, randint
 
 

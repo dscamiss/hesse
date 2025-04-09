@@ -11,7 +11,7 @@ from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
 
-from src.hesse.types import Criterion
+from hesse.types import Criterion
 
 _RANDINT_LO = -10
 _RANDINT_HI = 10

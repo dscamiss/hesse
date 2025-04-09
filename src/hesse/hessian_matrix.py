@@ -10,8 +10,8 @@ from jaxtyping import Num, jaxtyped
 from torch import Tensor, nn
 from typeguard import typechecked as typechecker
 
-from src.hesse.hessian_dict import loss_hessian_dict, model_hessian_dict
-from src.hesse.types import (
+from hesse.hessian_dict import loss_hessian_dict, model_hessian_dict
+from hesse.types import (
     BatchHessianDict,
     BatchInputs,
     BatchTarget,
