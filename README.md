@@ -21,6 +21,8 @@ This is achieved with user-friendly wrappers for `torch.func` transforms.
 
 # Installation
 
+In an existing Python 3.9+ environment:
+
 ```bash
 git clone https://github.com/dscamiss/hesse/
 pip install ./hesse
