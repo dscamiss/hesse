@@ -82,24 +82,24 @@ y = -1.0 * x
 Computing the Hessian matrix of `model` is a one-liner:
 
 ```python
-    hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
+hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
 ```
 
 We can verify the correctness of the result.
 
 ```python
-    model_output = model(x, y)
-    expected = torch.zeros(model_output.shape + torch.Size([8, 8]))
-    expected[0][0][:4, :4] =  2.0 * torch.eye(4)
-    expected[0][1][:4, :4] =  4.0 * torch.eye(4)
-    expected[0][2][4:, 4:] = -2.0 * torch.eye(4)
-    expected[0][3][4:, 4:] = -4.0 * torch.eye(4)
-    expected[1][0][:4, :4] =  6.0 * torch.eye(4)
-    expected[1][1][:4, :4] =  8.0 * torch.eye(4)
-    expected[1][2][4:, 4:] = -6.0 * torch.eye(4)
-    expected[1][3][4:, 4:] = -8.0 * torch.eye(4)
+model_output = model(x, y)
+expected = torch.zeros(model_output.shape + torch.Size([8, 8]))
+expected[0][0][:4, :4] =  2.0 * torch.eye(4)
+expected[0][1][:4, :4] =  4.0 * torch.eye(4)
+expected[0][2][4:, 4:] = -2.0 * torch.eye(4)
+expected[0][3][4:, 4:] = -4.0 * torch.eye(4)
+expected[1][0][:4, :4] =  6.0 * torch.eye(4)
+expected[1][1][:4, :4] =  8.0 * torch.eye(4)
+expected[1][2][4:, 4:] = -6.0 * torch.eye(4)
+expected[1][3][4:, 4:] = -8.0 * torch.eye(4)
 
-    assert hessian.equal(expected), "Error in Hessian values"
+assert hessian.equal(expected), "Error in Hessian values"
 ```
 
 # TODO
