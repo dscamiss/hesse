@@ -67,7 +67,7 @@ class MimoModel(torch.nn.Module):
         return torch.hstack((rows_1, rows_2))
 ```
 
-Make an instance of `MimoModel` along with some inputs.
+Make an instance of `MimoModel` along with some batch inputs.
 
 ```python
 input_dim = 2
@@ -91,7 +91,9 @@ Computing the full Hessian matrix of `model` is easy:
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
 ```
 
-We can verify the correctness of the result.
+We can now verify the correctness of the result.
+
+Note that in general, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 2`.
 
 ```python
 expected = torch.zeros([2, 4, 8, 8]))
@@ -116,7 +118,7 @@ Computing the Hessian matrix of `model` with respect to a subset of the model pa
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=("A"))
 ```
 
-We can verify the correctness of the result.
+We can again verify the correctness of the result.
 
 ```python
 expected = torch.zeros([2, 4, 4, 4])
