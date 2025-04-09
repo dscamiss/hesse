@@ -21,7 +21,7 @@ from hesse.types import (
     Params,
     Target,
 )
-from src.hesse.utils import make_tuple
+from hesse.utils import make_tuple
 
 _ParamDict = dict[str, nn.Parameter]
 _TensorDict = dict[str, Tensor]
