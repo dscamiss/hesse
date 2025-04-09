@@ -47,8 +47,8 @@ class MimoModel(torch.nn.Module):
         Run forward pass.
 
         Args:
-            x: First input tensor of shape (m, n).
-            y: Second input tensor of shape (m, n).
+            x: First input tensor of shape (b, n).
+            y: Second input tensor of shape (b, n).
 
         Returns:
             The matrix
@@ -56,7 +56,7 @@ class MimoModel(torch.nn.Module):
             [ tr(A^t A) x_{    0, :}   tr(B^t B) y_{    0, :} ]
             [ tr(A^t A) x_{    1, :}   tr(B^t B) y_{    1, :} ]
             [           :                        :            ]
-            [ tr(A^t A) x_{m - 1, :}   tr(B^t B) y_{m - 1, :} ].
+            [ tr(A^t A) x_{b - 1, :}   tr(B^t B) y_{b - 1, :} ].
         """
         rows_1 = torch.trace(self.A.T @ self.A) * x
         rows_2 = torch.trace(self.B.T @ self.B) * y
