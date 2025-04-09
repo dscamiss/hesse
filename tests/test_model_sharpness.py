@@ -28,4 +28,9 @@ def test_model_sharpness_bilinear(bilinear: nn.Module) -> None:
             is_batch=False,
         )
 
-    assert sharpness == 0.0, "Error in sharpness value"
+    # Check sharpness shape
+    output_shape = torch.Size([1])  # Model output is (1)
+    assert sharpness.shape == output_shape, "Error in sharpness shape"
+
+    # Check sharpness values
+    assert sharpness == 0.0, "Error in sharpness values"

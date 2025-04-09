@@ -3,7 +3,7 @@
 # Next line disables "returns Any" errors caused by unhinted PyTorch functions
 # mypy: disable-error-code="no-any-return"
 
-from typing import Any, Union
+from typing import Union
 
 import torch
 from jaxtyping import Num, jaxtyped

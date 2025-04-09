@@ -13,11 +13,11 @@ from typeguard import typechecked as typechecker
 from src.hesse.hessian_matrix import loss_hessian_matrix, model_hessian_matrix
 from src.hesse.types import BatchInputs, BatchTarget, Criterion, Inputs, Params, Target
 
-_Scalar = Num[Tensor, ""]
-_BatchScalar = Num[Tensor, "b "]
+_Scalar = Num[Tensor, "..."]
+_BatchScalar = Num[Tensor, "b ..."]
 
-_Matrix = Num[Tensor, "m n"]
-_BatchMatrix = Num[Tensor, "b m n"]
+_Matrix = Num[Tensor, "... m n"]
+_BatchMatrix = Num[Tensor, "b ... m n"]
 
 
 @jaxtyped(typechecker=typechecker)
@@ -99,7 +99,7 @@ def sharpness(
             index_tuple = (batch,) if is_batch else ()
             if not zero_dim_output:
                 index_tuple += (output,)
-            matrix_sharpness = _sharpness(matrix[index_tuple])
+            matrix_sharpness[batch, output] = _sharpness(matrix[index_tuple])
 
     # Postprocess to remove fictitious dimensions
     if not is_batch:
