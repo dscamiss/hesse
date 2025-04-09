@@ -23,7 +23,7 @@ This is achieved with user-friendly wrappers for `torch.func` transforms.
 
 ```bash
 git clone https://github.com/dscamiss/hesse/
-pip install hesse
+pip install ./hesse
 ```
 
 # Example
