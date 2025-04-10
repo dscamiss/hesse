@@ -15,7 +15,7 @@ The goal of `hesse` is to simplify the computation of Hessian matrices (and rela
 In particular, the goal is to simplify the computation of:
 
 * **Model Hessians** (these are Hessian matrices of a given model with respect to its trainable parameters);
-* **Loss function Hessians** (these are Hessian matrices of `criterion(model(inputs), target)` with respect to `model`'s trainable parameters).
+* **Loss function Hessians** (these are Hessian matrices of a loss function of the form `criterion(model(inputs), target)` with respect to `model`'s trainable parameters).
 
 This is achieved with user-friendly wrappers for `torch.func` transforms.
 
