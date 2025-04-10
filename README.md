@@ -85,15 +85,13 @@ y = -1.0 * x
 
 ## Model Hessians
 
-### Full Hessian matrix
-
-Computing the full Hessian matrix of `model` is easy:
+Computing the Hessian matrix of `model` is easy:
 
 ```python
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
 ```
 
-We can now verify the correctness of the result.
+We can verify the correctness of the result.
 
 ```python
 expected = torch.zeros([2, 4, 8, 8]))
@@ -112,12 +110,10 @@ assert hessian.equal(expected), "Error in Hessian values"
 
 Generally speaking, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 2`.
 
-### Reduced Hessian matrix
-
-To compute the Hessian matrix of `model` with respect to a subset of the model parameters, just specify the specific parameter names:
+To compute the Hessian matrix of `model` with respect to a subset of the model parameters, just provide the specific parameter names:
 
 ```python
-hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=("A"))
+hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=["A"])
 ```
 
 We can again verify the correctness of the result.
