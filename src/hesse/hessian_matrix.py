@@ -258,7 +258,6 @@ def loss_hessian_matrix(
     target: Union[Target, BatchTarget],
     params: Params = None,
     diagonal_only: bool = False,
-    is_batch: bool = True,
 ) -> Num[Tensor, "n n"]:
     """
     Hessian matrix of loss function with respect to model parameters.
@@ -271,8 +270,6 @@ def loss_hessian_matrix(
         params: Specific model parameters to use.  Default value is `None`,
             which means use all model parameters which are not frozen.
         diagonal_only: Make diagonal blocks only.  Default value is `False`.
-        is_batch: Batch inputs and batch target provided.  Default value is
-            `True`.
 
     Returns:
         Hessian (or batch Hessian) matrix of the loss function
