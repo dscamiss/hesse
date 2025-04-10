@@ -108,7 +108,7 @@ criterion = torch.nn.MSELoss()
 target = torch.randn(2, 4)
 ```
 
-Computing the Hessian matrix of `criterion(model(inputs), target)` is easy:
+Computing the Hessian matrix of the loss function `criterion(model(inputs), target)` is easy:
 
 ```python
 loss_hessian = hesse.loss_hessian_matrix(
