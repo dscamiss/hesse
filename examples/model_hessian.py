@@ -1,4 +1,4 @@
-"""Toy multi-input, multi-output model."""
+"""Model Hessian example."""
 
 import torch
 from jaxtyping import Num, jaxtyped
@@ -13,10 +13,10 @@ import hesse
 class MimoModel(torch.nn.Module):
     """Multi-input, multi-output demo model."""
 
-    def __init__(self, input_dim: int, output_dim: int) -> None:
+    def __init__(self, m: int) -> None:
         super().__init__()
-        self.A = torch.nn.Parameter(torch.randn(input_dim, output_dim))
-        self.B = torch.nn.Parameter(torch.randn(input_dim, output_dim))
+        self.A = torch.nn.Parameter(torch.randn(m, m))
+        self.B = torch.nn.Parameter(torch.randn(m, m))
 
     @jaxtyped(typechecker=typechecker)
     def forward(self, x: Num[Tensor, "b n"], y: Num[Tensor, "b n"]) -> Num[Tensor, "b two_n"]:
@@ -41,12 +41,10 @@ class MimoModel(torch.nn.Module):
 
 
 def run_demo() -> None:
-    """Run demo for multi-input, multi-output model."""
-    input_dim = 2
-    output_dim = 2
-    model = MimoModel(input_dim, output_dim)
+    """Run model Hessian demo."""
+    model = MimoModel(2)
 
-    # Make
+    # Make batch inputs
     x = torch.Tensor(
         [
             [1.0, 2.0],
