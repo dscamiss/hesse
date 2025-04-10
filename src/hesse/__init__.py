@@ -1,8 +1,5 @@
 """Main module."""
 
-import importlib.metadata
-import os
-
 from hesse.hessian_dict import loss_hessian_dict, model_hessian_dict
 from hesse.hessian_matrix import loss_hessian_matrix, model_hessian_matrix
 from hesse.sharpness import loss_sharpness, model_sharpness
@@ -15,7 +12,3 @@ __all__ = [
     "model_hessian_matrix",
     "model_sharpness",
 ]
-
-# The call to `importlib.metadata.version()` fails in GitHub CI
-if not os.getenv("GITHUB_ACTIONS"):
-    __version__ = importlib.metadata.version("hesse")
