@@ -54,7 +54,50 @@ def _get_non_batched_output_shape(
     return output_shape
 
 
-# TODO: Can we refactor to use `vmap` here?
+def _process_batch_output_slice(
+    params_dict: dict[str, Tensor],
+    hessian_dict: Union[_HessianMatrix, _BatchHessianMatrix],
+    hessian_matrix: _BatchHessianMatrix,
+    batch: int,
+    output: int,
+    is_batch: bool,
+    diagonal_only: bool,
+    zero_dim_output: bool,
+) -> None:
+    # Get list of Hessian parameter names
+    hessian_param_names = list(hessian_dict.keys())
+
+    # Populate each (blockwise) row and column
+    row_offset = 0
+    for row_param_name in hessian_param_names:
+        row_param_size = params_dict[row_param_name].numel()
+        col_offset = 0
+        for col_param_name in hessian_param_names:
+            col_param_size = params_dict[col_param_name].numel()
+
+            # Skip off-diagonal blocks in diagonal-only mode
+            if diagonal_only and row_param_name != col_param_name:
+                continue
+
+            # Get current Hessian block
+            index_tuple = (batch,) if is_batch else ()
+            if not zero_dim_output:
+                index_tuple += (output,)
+            hessian_block = hessian_dict[row_param_name][col_param_name][index_tuple]
+
+            # Populate block in batch Hessian matrix
+            hessian_block = hessian_block.view(row_param_size, col_param_size)
+            row_slice = slice(row_offset, row_offset + row_param_size)
+            col_slice = slice(col_offset, col_offset + col_param_size)
+            hessian_matrix[batch, output, row_slice, col_slice] = hessian_block
+
+            # Advance column offset for next iteration
+            col_offset += col_param_size
+
+        # Advance row offset for next iteration
+        row_offset += row_param_size
+
+
 @jaxtyped(typechecker=typechecker)
 def hessian_matrix_from_hessian_dict(
     model: nn.Module,
@@ -95,7 +138,7 @@ def hessian_matrix_from_hessian_dict(
     # Get model parameters dict
     params_dict = dict(model.named_parameters())
 
-    # Get Hessian parameter names
+    # Get list of Hessian parameter names
     hessian_param_names = list(hessian_dict.keys())
 
     # Determine batch size
@@ -127,34 +170,16 @@ def hessian_matrix_from_hessian_dict(
     # Populate batch Hessian matrix
     for batch in range(batch_size):
         for output in range(output_size):
-            row_offset = 0
-            for row_param_name in hessian_param_names:
-                row_param_size = params_dict[row_param_name].numel()
-                col_offset = 0
-                for col_param_name in hessian_param_names:
-                    col_param_size = params_dict[col_param_name].numel()
-
-                    # Skip off-diagonal blocks in diagonal-only mode
-                    if diagonal_only and row_param_name != col_param_name:
-                        continue
-
-                    # Get current Hessian block
-                    index_tuple = (batch,) if is_batch else ()
-                    if not zero_dim_output:
-                        index_tuple += (output,)
-                    hessian_block = hessian_dict[row_param_name][col_param_name][index_tuple]
-
-                    # Add block to batch Hessian matrix
-                    hessian_block = hessian_block.view(row_param_size, col_param_size)
-                    row_slice = slice(row_offset, row_offset + row_param_size)
-                    col_slice = slice(col_offset, col_offset + col_param_size)
-                    hessian_matrix[batch, output, row_slice, col_slice] = hessian_block
-
-                    # Advance column offset for next iteration
-                    col_offset += col_param_size
-
-                # Advance row offset for next iteration
-                row_offset += row_param_size
+            _process_batch_output_slice(
+                params_dict=params_dict,
+                hessian_dict=hessian_dict,
+                hessian_matrix=hessian_matrix,
+                batch=batch,
+                output=output,
+                is_batch=is_batch,
+                zero_dim_output=zero_dim_output,
+                diagonal_only=diagonal_only,
+            )
 
     # Postprocess to remove fictitious dimensions
     if not is_batch:
@@ -165,6 +190,7 @@ def hessian_matrix_from_hessian_dict(
         if zero_dim_output:
             hessian_matrix.squeeze_(1)
 
+    # Store shape metadata for potential re-use
     hessian_matrix.shape_metadata = {
         "batch_size": batch_size,
         "output_shape": output_shape,
@@ -205,8 +231,6 @@ def model_hessian_matrix(
         diagonal_only=diagonal_only,
         is_batch=is_batch,
     )
-
-    # TODO: Add number of dimensions check
 
     return hessian_matrix_from_hessian_dict(
         model=model,
@@ -256,8 +280,6 @@ def loss_hessian_matrix(
         params=params,
         diagonal_only=diagonal_only,
     )
-
-    # TODO: Add number of dimensions check
 
     return hessian_matrix_from_hessian_dict(
         model=model,
