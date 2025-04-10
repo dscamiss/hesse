@@ -55,8 +55,8 @@ def run_demo() -> None:
     )
     y = -1.0 * x
 
-    # Compute full Hessian matrix
-    hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
+    # Compute full model Hessian matrix
+    model_hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
 
     # Compute expected Hessian matrix
     expected = torch.zeros([2, 4, 8, 8])
@@ -70,14 +70,14 @@ def run_demo() -> None:
     expected[1][2][4:, 4:] = -6.0 * torch.eye(4)
     expected[1][3][4:, 4:] = -8.0 * torch.eye(4)
 
-    assert hessian.equal(expected), "Error in Hessian values"
+    # Compare actual and expected
+    assert model_hessian.equal(expected), "Error in Hessian values"
+    print("Full model Hessian values match")
 
-    print("Full Hessian values match")
+    # Compute reduced model Hessian matrix
+    reduced_model_hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=("A",))
 
-    # Compute reduced Hessian matrix
-    hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=("A"))
-
-    # Compute expected reduced Hessian matrix
+    # Compute expected reduced model Hessian matrix
     expected = torch.zeros([2, 4, 4, 4])
 
     expected[0][0] = 2.0 * torch.eye(4)
@@ -85,9 +85,9 @@ def run_demo() -> None:
     expected[1][0] = 6.0 * torch.eye(4)
     expected[1][1] = 8.0 * torch.eye(4)
 
-    assert hessian.equal(expected), "Error in Hessian values"
-
-    print("Reduced Hessian values match")
+    # Compare actual and expected
+    assert reduced_model_hessian.equal(expected), "Error in Hessian values"
+    print("Reduced model Hessian values match")
 
 
 if __name__ == "__main__":
