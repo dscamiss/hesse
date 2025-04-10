@@ -10,12 +10,12 @@
 
 # Introduction
 
-The goal of `hesse` is to simplify the computation of Hessians (and related quantities) in PyTorch.  
+The goal of `hesse` is to simplify the computation of Hessian matrices (and related quantities) in PyTorch.  
 
 In particular, the goal is to simplify the computation of:
 
-* **Model Hessians** (these are Hessians of a given model with respect to its trainable parameters);
-* **Loss function Hessians** (these are Hessians of `criterion(model(inputs), target)` with respect to `model`'s trainable parameters).
+* **Model Hessians** (these are Hessian matrices of a given model with respect to its trainable parameters);
+* **Loss function Hessians** (these are Hessian matrices of `criterion(model(inputs), target)` with respect to `model`'s trainable parameters).
 
 This is achieved with user-friendly wrappers for `torch.func` transforms.
 
@@ -39,14 +39,15 @@ import torch
 from torch import Tensor
 
 class MimoModel(torch.nn.Module):
-    """Multi-input, multi-output model."""
+    """Multi-input, multi-output demo model."""
 
-    def __init__(self, input_dim: int, output_dim: int) -> None:
+    def __init__(self, m: int) -> None:
         super().__init__()
-        self.A = torch.nn.Parameter(torch.randn(input_dim, output_dim))
-        self.B = torch.nn.Parameter(torch.randn(input_dim, output_dim))
+        self.A = torch.nn.Parameter(torch.randn(m, m))
+        self.B = torch.nn.Parameter(torch.randn(m, m))
 
-    def forward(self, x: Tensor, y: Tensor) -> Tensor:
+    @jaxtyped(typechecker=typechecker)
+    def forward(self, x: Num[Tensor, "b n"], y: Num[Tensor, "b n"]) -> Num[Tensor, "b two_n"]:
         """
         Run forward pass.
 
@@ -60,19 +61,17 @@ class MimoModel(torch.nn.Module):
             [ tr(A^t A) x_{    0, :}   tr(B^t B) y_{    0, :} ]
             [ tr(A^t A) x_{    1, :}   tr(B^t B) y_{    1, :} ]
             [           :                        :            ]
-            [ tr(A^t A) x_{b - 1, :}   tr(B^t B) y_{b - 1, :} ].
+            [ tr(A^t A) x_{m - 1, :}   tr(B^t B) y_{m - 1, :} ].
         """
-        rows_1 = torch.trace(self.A.T @ self.A) * x
-        rows_2 = torch.trace(self.B.T @ self.B) * y
-        return torch.hstack((rows_1, rows_2))
+        row_1 = torch.trace(self.A.T @ self.A) * x
+        row_2 = torch.trace(self.B.T @ self.B) * y
+        return torch.hstack((row_1, row_2))
 ```
 
 Make an instance of `MimoModel` and batch inputs.
 
 ```python
-input_dim = 2
-output_dim = 2
-model = MimoModel(input_dim, output_dim)
+model = MimoModel(2)
 
 x = torch.Tensor(
     [
@@ -108,7 +107,7 @@ expected[1][3][4:, 4:] = -8.0 * torch.eye(4)
 assert hessian.equal(expected), "Error in Hessian values"
 ```
 
-Generally speaking, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 2`.
+Generally speaking, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 4`.
 
 To compute the Hessian matrix of `model` with respect to a subset of the model parameters, just provide the specific parameter names:
 
