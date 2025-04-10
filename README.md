@@ -109,7 +109,7 @@ assert hessian.equal(expected), "Error in Hessian values"
 
 Generally speaking, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 4`.
 
-To compute the Hessian matrix of `model` with respect to a subset of the model parameters, just provide the specific parameter names:
+To compute the Hessian matrix with respect to a subset of the model parameters, just provide the specific parameter names:
 
 ```python
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=["A"])
@@ -137,7 +137,7 @@ criterion = torch.nn.MSELoss()
 target = torch.randn(2, 4)
 ```
 
-Compute the Hessian matrix of the loss function:
+Computing the Hessian matrix of `criterion(model(inputs), target)` is easy:
 
 ```python
 loss_hessian = hesse.loss_hessian_matrix(
@@ -147,3 +147,5 @@ loss_hessian = hesse.loss_hessian_matrix(
     target=target,
 )
 ```
+
+As above, we can also compute the Hessian matrix with respect to a subset of the model parameters.
