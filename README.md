@@ -90,42 +90,13 @@ Computing the Hessian matrix of `model` is easy:
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y))
 ```
 
-We can verify the correctness of the result.
+Generally speaking, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 4`, 
+so that `hessian` has shape `(2, 4, 8, 8)`.
 
-```python
-expected = torch.zeros([2, 4, 8, 8]))
-
-expected[0][0][:4, :4] =  2.0 * torch.eye(4)
-expected[0][1][:4, :4] =  4.0 * torch.eye(4)
-expected[0][2][4:, 4:] = -2.0 * torch.eye(4)
-expected[0][3][4:, 4:] = -4.0 * torch.eye(4)
-expected[1][0][:4, :4] =  6.0 * torch.eye(4)
-expected[1][1][:4, :4] =  8.0 * torch.eye(4)
-expected[1][2][4:, 4:] = -6.0 * torch.eye(4)
-expected[1][3][4:, 4:] = -8.0 * torch.eye(4)
-
-assert hessian.equal(expected), "Error in Hessian values"
-```
-
-Generally speaking, the shape of the Hessian matrix will be `(batch_size, output_size, ...)`.  In this instance, `batch_size = 2` and `output_size = 4`.
-
-To compute the Hessian matrix with respect to a subset of the model parameters, just provide the specific parameter names:
+To compute the Hessian matrix with respect to a subset of the model parameters, just provide a list of parameter names:
 
 ```python
 hessian = hesse.model_hessian_matrix(model=model, inputs=(x, y), params=["A"])
-```
-
-We can again verify the correctness of the result.
-
-```python
-expected = torch.zeros([2, 4, 4, 4])
-
-expected[0][0] = 2.0 * torch.eye(4)
-expected[0][1] = 4.0 * torch.eye(4)
-expected[1][0] = 6.0 * torch.eye(4)
-expected[1][1] = 8.0 * torch.eye(4)
-
-assert hessian.equal(expected), "Error in Hessian values"
 ```
 
 ## Loss function Hessians
@@ -148,4 +119,15 @@ loss_hessian = hesse.loss_hessian_matrix(
 )
 ```
 
-As above, we can also compute the Hessian matrix with respect to a subset of the model parameters.
+As above, we can compute the Hessian matrix with respect to a subset of the model parameters:
+
+```python
+loss_hessian = hesse.loss_hessian_matrix(
+    model=model,
+    criterion=criterion,
+    inputs=(x, y),
+    target=target,
+    params=["A"],
+)
+```
+
