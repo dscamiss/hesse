@@ -105,6 +105,7 @@ def hessian_matrix_from_hessian_dict(
     hessian_dict: Union[HessianDict, BatchHessianDict],
     diagonal_only: bool,
     is_batch: bool = True,
+    is_loss_hessian: bool = False,
 ) -> Union[_HessianMatrix, _BatchHessianMatrix]:
     """
     Hessian (or batch Hessian) matrix from Hessian (or batch Hessian) dict.
@@ -118,6 +119,8 @@ def hessian_matrix_from_hessian_dict(
         hessian_dict: Hessian (or batch Hessian) dict.
         diagonal_only: Make diagonal blocks only.
         is_batch: Batch Hessian dict provided.  Default value is `True`.
+        is_loss_hessian: The `hessian_dict` argument is derived from a loss
+            function.  Default value is `False`.
 
     Returns:
         Hessian (or batch Hessian) matrix.
@@ -141,21 +144,27 @@ def hessian_matrix_from_hessian_dict(
     # Get list of Hessian parameter names
     hessian_param_names = list(hessian_dict.keys())
 
-    # Determine batch size
-    if is_batch:
-        param_name = hessian_param_names[0]
-        batch_size = hessian_dict[param_name][param_name].shape[0]
-    else:
-        # Non-batch case -- uses fictitious batch size of 1 for code commonality
+    if is_loss_hessian:
         batch_size = 1
+        output_shape = ()
+        zero_dim_output = True
+        output_size = 1
+    else:
+        # Determine batch size
+        if is_batch:
+            param_name = hessian_param_names[0]
+            batch_size = hessian_dict[param_name][param_name].shape[0]
+        else:
+            # Non-batch case -- uses fictitious batch size of 1 for code commonality
+            batch_size = 1
 
-    # Determine output shape
-    output_shape = _get_non_batched_output_shape(model, inputs, is_batch)
+        # Determine output shape
+        output_shape = _get_non_batched_output_shape(model, inputs, is_batch)
 
-    # Determine output size
-    sum_output_shape = sum(output_shape)
-    zero_dim_output = sum_output_shape == 0
-    output_size = max(1, sum_output_shape)
+        # Determine output size
+        sum_output_shape = sum(output_shape)
+        zero_dim_output = sum_output_shape == 0
+        output_size = max(1, sum_output_shape)
 
     # TODO: Handle high-dimensional output shapes
     if len(output_shape) >= 2:
@@ -210,7 +219,7 @@ def model_hessian_matrix(
     is_batch: bool = True,
 ) -> Union[_HessianMatrix, _BatchHessianMatrix]:
     """
-    Hessian (or batch Hessian) of a model with respect to its parameters.
+    Hessian (or batch Hessian) matrix of model with respect to its parameters.
 
     Args:
         model: Network model.
@@ -252,7 +261,7 @@ def loss_hessian_matrix(
     is_batch: bool = True,
 ) -> Num[Tensor, "n n"]:
     """
-    Hessian (or batch Hessian) of loss with respect to model parameters.
+    Hessian matrix of loss function with respect to model parameters.
 
     Args:
         model: Network model.
@@ -286,5 +295,6 @@ def loss_hessian_matrix(
         inputs=inputs,
         hessian_dict=hessian_dict,
         diagonal_only=diagonal_only,
-        is_batch=is_batch,
+        is_batch=False,  # Assume loss criterion removes batch dimension
+        is_loss_hessian=True,
     )
