@@ -130,7 +130,7 @@ def model_hessian_dict(
     inputs: Union[Inputs, BatchInputs],
     params: Params = None,
     diagonal_only: bool = False,
-    is_batch: bool = True,
+    is_batch: bool = True,  # Only used in dimension check
 ) -> Union[HessianDict, BatchHessianDict]:
     """
     Hessian (or batch Hessian) of a model with respect to its parameters.
@@ -219,7 +219,7 @@ def loss_hessian_dict(
     diagonal_only: bool = False,
 ) -> HessianDict:
     """
-    Hessian (or batch Hessian) of loss with respect to model parameters.
+    Hessian of loss function with respect to model parameters.
 
     Args:
         model: Network model.
