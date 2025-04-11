@@ -188,7 +188,7 @@ def fixture_sum_norms_squared_frozen() -> nn.Module:
 @pytest.fixture(name="batch_size")
 def fixture_batch_size() -> int:
     """Batch size for input/output data."""
-    return 16
+    return 4
 
 
 @pytest.fixture(name="mse")
