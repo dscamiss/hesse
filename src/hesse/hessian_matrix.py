@@ -98,6 +98,7 @@ def _process_batch_output_slice(
         row_offset += row_param_size
 
 
+# TODO: Can we apply vmap() instead of looping over batches?
 @jaxtyped(typechecker=typechecker)
 def hessian_matrix_from_hessian_dict(
     model: nn.Module,
