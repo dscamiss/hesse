@@ -1,4 +1,4 @@
-# `hesse` 🧘‍♂️
+# `hesse` :snake:
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?logo=PyTorch&logoColor=white)
@@ -10,14 +10,29 @@
 
 # Introduction
 
-The goal of `hesse` is to simplify the computation of Hessian matrices (and related quantities) in PyTorch.  
+The goal of this package is to simplify the computation of certain Hessian matrices.  
 
-In particular, the goal is to simplify the computation of:
+In particular, suppose that we are interested in computing the Hessian matrix of `model` with respect to 
+its parameters.  The existing paradigm is to make a "functional version" of `model`'s forward pass
 
-* **Model Hessians** (these are Hessian matrices of a given model with respect to its trainable parameters);
-* **Loss function Hessians** (these are Hessian matrices of a loss function of the form `criterion(model(inputs), target)` with respect to `model`'s trainable parameters).
+```python
+def functional_forward(params):
+    return torch.func.functional_call(model, params, inputs)
+```
 
-This is achieved with user-friendly wrappers for `torch.func` transforms.
+and then compute its Hessian
+
+```python
+params = dict(model.named_parameters())
+hessian = torch.func.hessian(functional_forward)(params)
+```
+
+The output `hessian` is a dictionary of dictionaries, such that `hessian["P"]["Q"]` is the Hessian matrix block 
+correponding to named parameters `P` and `Q`.  Extra work is required if we want to assemble the full Hessian matrix, 
+if we want to modify this process to obtain a diagonal approximation of the full Hessian matrix, and so on.
+
+This package aims to remove the extra work, by providing user-friendly wrappers for `torch.func` transforms
+and matrix assembly.
 
 # Installation
 
@@ -32,12 +47,16 @@ pip install ./hesse
 
 ## Setup
 
+Import packages.
+
+```python
+import hesse
+import torch
+```
+
 Create a toy multi-input, multi-output model.
 
 ```python
-import torch
-from torch import Tensor
-
 class MimoModel(torch.nn.Module):
     """Multi-input, multi-output demo model."""
 
@@ -46,8 +65,7 @@ class MimoModel(torch.nn.Module):
         self.A = torch.nn.Parameter(torch.randn(m, m))
         self.B = torch.nn.Parameter(torch.randn(m, m))
 
-    @jaxtyped(typechecker=typechecker)
-    def forward(self, x: Num[Tensor, "b n"], y: Num[Tensor, "b n"]) -> Num[Tensor, "b two_n"]:
+    def forward(self, x, y):
         """
         Run forward pass.
 
